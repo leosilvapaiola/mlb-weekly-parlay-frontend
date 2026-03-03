@@ -1,0 +1,483 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>MLB Parlay Tracker</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            padding: 20px;
+        }
+        
+        .container {
+            max-width: 1400px;
+            margin: 0 auto;
+        }
+        
+        header {
+            text-align: center;
+            color: white;
+            margin-bottom: 30px;
+        }
+        
+        h1 {
+            font-size: 2.5em;
+            margin-bottom: 10px;
+            text-shadow: 2px 2px 4px rgba(0,0,0,0.3);
+        }
+        
+        .last-update {
+            font-size: 0.9em;
+            opacity: 0.9;
+        }
+        
+        .games-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(400px, 1fr));
+            gap: 20px;
+            margin-bottom: 30px;
+        }
+        
+        .game-card {
+            background: white;
+            border-radius: 15px;
+            padding: 20px;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.2);
+            transition: transform 0.3s;
+        }
+        
+        .game-card:hover {
+            transform: translateY(-5px);
+        }
+        
+        .game-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 15px;
+            padding-bottom: 10px;
+            border-bottom: 2px solid #f0f0f0;
+        }
+        
+        .game-info-left {
+            display: flex;
+            flex-direction: column;
+            gap: 5px;
+        }
+        
+        .game-status {
+            font-size: 0.85em;
+            padding: 5px 10px;
+            border-radius: 20px;
+            background: #667eea;
+            color: white;
+            font-weight: bold;
+        }
+        
+        .game-time {
+            font-size: 0.8em;
+            color: #666;
+            font-weight: normal;
+        }
+        
+        .inning {
+            font-size: 0.9em;
+            color: #666;
+        }
+        
+        .teams {
+            margin: 20px 0;
+        }
+        
+        .team-row {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 10px;
+            margin: 5px 0;
+            border-radius: 8px;
+            background: #f8f9fa;
+        }
+        
+        .team-info {
+            flex: 1;
+        }
+        
+        .team-name {
+            font-size: 1.2em;
+            font-weight: bold;
+            color: #333;
+            margin-bottom: 5px;
+        }
+        
+        .team-details {
+            font-size: 0.8em;
+            color: #666;
+            line-height: 1.6;
+        }
+        
+        .team-record-line {
+            margin-bottom: 2px;
+        }
+        
+        .team-pitcher-line {
+            margin-bottom: 2px;
+        }
+        
+        .team-odds {
+            background: #fff3cd;
+            color: #856404;
+            padding: 2px 6px;
+            border-radius: 4px;
+            font-weight: bold;
+            font-size: 0.85em;
+            margin-left: 5px;
+        }
+        
+        .team-odds.favorite {
+            background: #d4edda;
+            color: #155724;
+        }
+        
+        .team-odds.underdog {
+            background: #f8d7da;
+            color: #721c24;
+        }
+        
+        .team-pitcher {
+            font-style: normal;
+            color: #666;
+        }
+        
+        .team-score {
+            font-size: 1.5em;
+            font-weight: bold;
+            color: #667eea;
+        }
+        
+        .bets-section {
+            margin-top: 15px;
+            padding-top: 15px;
+            border-top: 2px solid #f0f0f0;
+        }
+        
+        .bets-title {
+            font-size: 0.9em;
+            color: #666;
+            margin-bottom: 10px;
+            font-weight: bold;
+        }
+        
+        .bet-item {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 8px 12px;
+            margin: 5px 0;
+            background: #f0f4ff;
+            border-radius: 5px;
+            font-size: 0.9em;
+            transition: all 0.3s;
+        }
+        
+        .bet-item.winning {
+            background: #d4edda;
+            border-left: 4px solid #28a745;
+        }
+        
+        .bet-item.losing {
+            background: #f8d7da;
+            border-left: 4px solid #dc3545;
+        }
+        
+        .bet-item.winner {
+            background: #d4edda;
+            border-left: 4px solid #28a745;
+            font-weight: bold;
+        }
+        
+        .bet-item.loser {
+            background: #f8d7da;
+            border-left: 4px solid #dc3545;
+            opacity: 0.7;
+        }
+        
+        .bet-user {
+            font-weight: bold;
+            color: #667eea;
+            flex: 1;
+        }
+        
+        .bet-team {
+            color: #333;
+            flex: 2;
+        }
+        
+        .bet-status {
+            font-size: 0.85em;
+            padding: 3px 8px;
+            border-radius: 12px;
+            font-weight: bold;
+            white-space: nowrap;
+        }
+        
+        .bet-status.winning {
+            background: #28a745;
+            color: white;
+        }
+        
+        .bet-status.losing {
+            background: #dc3545;
+            color: white;
+        }
+        
+        .bet-status.winner {
+            background: #28a745;
+            color: white;
+        }
+        
+        .bet-status.loser {
+            background: #6c757d;
+            color: white;
+        }
+        
+        .bet-status.tied {
+            background: #ffc107;
+            color: #333;
+        }
+        
+        .no-data {
+            text-align: center;
+            color: white;
+            font-size: 1.2em;
+            padding: 40px;
+            background: rgba(255,255,255,0.1);
+            border-radius: 15px;
+        }
+        
+        .loading {
+            text-align: center;
+            color: white;
+            font-size: 1.5em;
+            padding: 40px;
+        }
+        
+        .error {
+            background: #ff4444;
+            color: white;
+            padding: 15px;
+            border-radius: 10px;
+            margin-bottom: 20px;
+            text-align: center;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <header>
+            <h1>⚾ MLB Parlay Tracker</h1>
+            <div class="last-update" id="lastUpdate">Cargando...</div>
+        </header>
+        
+        <div id="error" class="error" style="display: none;"></div>
+        <div id="loading" class="loading">Cargando datos...</div>
+        <div id="content" style="display: none;">
+            <div class="games-grid" id="gamesGrid"></div>
+        </div>
+    </div>
+
+    <script>
+        // TODO: Replace with your API Gateway URL after deployment
+        // Get this from: cd terraform && terraform output api_url
+        const API_URL = 'YOUR_API_GATEWAY_URL_HERE';
+        
+        async function fetchData() {
+            try {
+                const response = await fetch(API_URL + '/data');
+                if (!response.ok) throw new Error('Error al obtener datos');
+                
+                const data = await response.json();
+                renderData(data);
+                
+                document.getElementById('loading').style.display = 'none';
+                document.getElementById('content').style.display = 'block';
+                document.getElementById('error').style.display = 'none';
+                
+            } catch (error) {
+                console.error('Error:', error);
+                document.getElementById('error').textContent = 'Error: ' + error.message;
+                document.getElementById('error').style.display = 'block';
+                document.getElementById('loading').style.display = 'none';
+            }
+        }
+        
+        function renderData(data) {
+            const bets = data.bets || [];
+            const scores = data.scores || [];
+            const gamesGrid = document.getElementById('gamesGrid');
+            
+            // Group bets by game
+            const gamesBets = {};
+            bets.forEach(bet => {
+                if (!gamesBets[bet.game_id]) {
+                    gamesBets[bet.game_id] = [];
+                }
+                gamesBets[bet.game_id].push(bet);
+            });
+            
+            // Create score map
+            const scoresMap = {};
+            scores.forEach(scoreItem => {
+                scoresMap[scoreItem.game_id] = scoreItem;
+            });
+            
+            // Render games
+            gamesGrid.innerHTML = '';
+            Object.keys(gamesBets).forEach(gameId => {
+                const gameBets = gamesBets[gameId];
+                const scoreData = scoresMap[gameId];
+                
+                const card = createGameCard(gameId, gameBets, scoreData);
+                gamesGrid.appendChild(card);
+            });
+            
+            // Update timestamp
+            const now = new Date().toLocaleString('es-ES');
+            document.getElementById('lastUpdate').textContent = 'Última actualización: ' + now;
+        }
+        
+        function createGameCard(gameId, bets, scoreData) {
+            const card = document.createElement('div');
+            card.className = 'game-card';
+            
+            let scoreHTML = '';
+            if (scoreData) {
+                const awayRecord = scoreData.away_record || '';
+                const homeRecord = scoreData.home_record || '';
+                const awayPitcher = scoreData.away_pitcher || 'TBD';
+                const homePitcher = scoreData.home_pitcher || 'TBD';
+                const awayOdds = scoreData.away_odds || null;
+                const homeOdds = scoreData.home_odds || null;
+                
+                // Format odds display
+                const formatOdds = (odds) => {
+                    if (!odds || odds === 0) return '';
+                    const oddsClass = odds < 0 ? 'favorite' : 'underdog';
+                    const oddsText = odds > 0 ? '+' + odds : odds;
+                    return '<span class="team-odds ' + oddsClass + '">' + oddsText + '</span>';
+                };
+                
+                const awayOddsHTML = formatOdds(awayOdds);
+                const homeOddsHTML = formatOdds(homeOdds);
+                
+                // Build team rows with new layout
+                const awayTeamHTML = '<div class="team-row"><div class="team-info"><div class="team-name">' + scoreData.away_team + '</div><div class="team-details"><div class="team-record-line">Récord Equipo: ' + awayRecord + awayOddsHTML + '</div><div class="team-pitcher-line">P. Abridor: ' + awayPitcher + '</div></div></div><span class="team-score">' + scoreData.away_score + '</span></div>';
+                
+                const homeTeamHTML = '<div class="team-row"><div class="team-info"><div class="team-name">' + scoreData.home_team + '</div><div class="team-details"><div class="team-record-line">Récord Equipo: ' + homeRecord + homeOddsHTML + '</div><div class="team-pitcher-line">P. Abridor: ' + homePitcher + '</div></div></div><span class="team-score">' + scoreData.home_score + '</span></div>';
+                
+                // Format game time
+                let gameTimeHTML = '';
+                if (scoreData.game_date) {
+                    try {
+                        const gameDate = new Date(scoreData.game_date);
+                        const timeStr = gameDate.toLocaleTimeString('es-ES', { 
+                            hour: '2-digit', 
+                            minute: '2-digit',
+                            timeZone: 'America/New_York'
+                        });
+                        gameTimeHTML = '<div class="game-time">🕐 ' + timeStr + ' ET</div>';
+                    } catch (e) {
+                        gameTimeHTML = '';
+                    }
+                }
+                
+                scoreHTML = '<div class="game-header"><div class="game-info-left"><div class="game-status">' + scoreData.status + '</div>' + gameTimeHTML + '</div><div class="inning">' + scoreData.inning_state + ' ' + scoreData.inning + '</div></div><div class="teams">' + awayTeamHTML + homeTeamHTML + '</div>';
+            } else {
+                scoreHTML = '<div class="game-header"><div class="game-status">Esperando datos...</div><div class="inning">Game ID: ' + gameId + '</div></div>';
+            }
+            
+            // Determinar estado del juego
+            const isFinal = scoreData && (scoreData.status === 'Final' || scoreData.status === 'Game Over');
+            const isInProgress = scoreData && scoreData.status === 'In Progress';
+            
+            // Crear HTML de apuestas con indicadores de ganador/perdedor
+            const betsHTML = bets.map(bet => {
+                let statusClass = '';
+                let statusText = '';
+                let betClass = '';
+                
+                if (scoreData) {
+                    const awayScore = scoreData.away_score || 0;
+                    const homeScore = scoreData.home_score || 0;
+                    const awayTeam = scoreData.away_team;
+                    const homeTeam = scoreData.home_team;
+                    
+                    // Determinar si el equipo apostado es away o home
+                    const isAwayTeam = bet.team === awayTeam;
+                    const isHomeTeam = bet.team === homeTeam;
+                    
+                    if (isAwayTeam || isHomeTeam) {
+                        const betTeamScore = isAwayTeam ? awayScore : homeScore;
+                        const opponentScore = isAwayTeam ? homeScore : awayScore;
+                        
+                        if (isFinal) {
+                            // Juego terminado
+                            if (betTeamScore > opponentScore) {
+                                statusClass = 'winner';
+                                statusText = '🏆 Ganador';
+                                betClass = 'winner';
+                            } else if (betTeamScore < opponentScore) {
+                                statusClass = 'loser';
+                                statusText = '❌ Perdedor';
+                                betClass = 'loser';
+                            } else {
+                                statusClass = 'tied';
+                                statusText = '🤝 Empate';
+                                betClass = 'tied';
+                            }
+                        } else if (isInProgress) {
+                            // Juego en progreso
+                            if (betTeamScore > opponentScore) {
+                                statusClass = 'winning';
+                                statusText = '✓ Ganando';
+                                betClass = 'winning';
+                            } else if (betTeamScore < opponentScore) {
+                                statusClass = 'losing';
+                                statusText = '✗ Perdiendo';
+                                betClass = 'losing';
+                            } else {
+                                statusClass = 'tied';
+                                statusText = '= Empatado';
+                                betClass = 'tied';
+                            }
+                        }
+                    }
+                }
+                
+                const statusHTML = statusText ? '<span class="bet-status ' + statusClass + '">' + statusText + '</span>' : '';
+                
+                return '<div class="bet-item ' + betClass + '"><span class="bet-user">' + bet.user + '</span><span class="bet-team">' + bet.team + '</span>' + statusHTML + '</div>';
+            }).join('');
+            
+            card.innerHTML = scoreHTML + '<div class="bets-section"><div class="bets-title">Apuestas:</div>' + betsHTML + '</div>';
+            
+            return card;
+        }
+        
+        // Initial load
+        fetchData();
+        
+        // Auto-refresh every 30 seconds
+        setInterval(fetchData, 30000);
+    </script>
+</body>
+</html>
