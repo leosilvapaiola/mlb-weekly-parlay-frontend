@@ -279,6 +279,17 @@
             margin-bottom: 20px;
             text-align: center;
         }
+        
+        .spring-training-notice {
+            background: #fff3cd;
+            color: #856404;
+            padding: 15px;
+            border-radius: 10px;
+            margin-bottom: 20px;
+            text-align: center;
+            border: 2px solid #ffc107;
+            font-weight: bold;
+        }
     </style>
 </head>
 <body>
@@ -287,6 +298,10 @@
             <h1>⚾ MLB Parlay Tracker</h1>
             <div class="last-update" id="lastUpdate">Cargando...</div>
         </header>
+        
+        <div id="springTrainingNotice" class="spring-training-notice" style="display: none;">
+            ⚠️ Spring Training: Los odds pueden no estar disponibles durante la pretemporada
+        </div>
         
         <div id="error" class="error" style="display: none;"></div>
         <div id="loading" class="loading">Cargando datos...</div>
@@ -299,6 +314,15 @@
         // TODO: Replace with your API Gateway URL after deployment
         // Get this from: cd terraform && terraform output api_url
         const API_URL = 'https://n7oy9qxhu8.execute-api.us-east-1.amazonaws.com/prod';
+        
+        // Check if it's Spring Training (February or March)
+        function checkSpringTraining() {
+            const now = new Date();
+            const month = now.getMonth() + 1; // getMonth() returns 0-11
+            if (month === 2 || month === 3) {
+                document.getElementById('springTrainingNotice').style.display = 'block';
+            }
+        }
         
         async function fetchData() {
             try {
@@ -370,7 +394,9 @@
                 
                 // Format odds display
                 const formatOdds = (odds) => {
-                    if (!odds || odds === 0) return '';
+                    if (!odds || odds === 0) {
+                        return '<span class="team-odds">N/A</span>';
+                    }
                     const oddsClass = odds < 0 ? 'favorite' : 'underdog';
                     const oddsText = odds > 0 ? '+' + odds : odds;
                     return '<span class="team-odds ' + oddsClass + '">' + oddsText + '</span>';
@@ -474,6 +500,7 @@
         }
         
         // Initial load
+        checkSpringTraining();
         fetchData();
         
         // Auto-refresh every 30 seconds
