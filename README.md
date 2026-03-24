@@ -21,7 +21,7 @@ Edita `index.html` y reemplaza `YOUR_API_GATEWAY_URL_HERE` con tu API URL:
 const API_URL = 'https://YOUR-API-ID.execute-api.us-east-1.amazonaws.com/prod';
 ```
 
-### 3. Deploy a GitHub Pages
+### 3. Deploy a GitHub Pages.
 
 #### Opción A: Desde GitHub UI
 
