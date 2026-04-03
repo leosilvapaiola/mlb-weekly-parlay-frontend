@@ -338,6 +338,27 @@
             background: #28a745;
         }
         
+        .whatsapp-shortcut {
+            display: inline-block;
+            background: #25D366;
+            color: white;
+            border: none;
+            padding: 10px 24px;
+            border-radius: 25px;
+            cursor: pointer;
+            font-size: 1em;
+            font-weight: bold;
+            margin-top: 12px;
+            text-decoration: none;
+            box-shadow: 0 4px 15px rgba(37,211,102,0.4);
+            transition: transform 0.2s, box-shadow 0.2s;
+        }
+        
+        .whatsapp-shortcut:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 6px 20px rgba(37,211,102,0.5);
+        }
+        
         .results-group-title {
             font-size: 1.1em;
             font-weight: bold;
@@ -362,6 +383,7 @@
         <header>
             <h1>⚾ MLB Parlay Tracker</h1>
             <div class="last-update" id="lastUpdate">Cargando...</div>
+            <button class="whatsapp-shortcut" onclick="document.getElementById('resultsSection').scrollIntoView({ behavior: 'smooth' })">💬 Resultados Hoy 💬</button>
         </header>
         
         <div id="springTrainingNotice" class="spring-training-notice" style="display: none;">
