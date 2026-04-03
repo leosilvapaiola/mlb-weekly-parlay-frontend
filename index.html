@@ -290,6 +290,71 @@
             border: 2px solid #ffc107;
             font-weight: bold;
         }
+        
+        .results-divider {
+            border: none;
+            border-top: 3px solid rgba(255,255,255,0.3);
+            margin: 40px 0 30px;
+        }
+        
+        .results-section {
+            background: rgba(255,255,255,0.95);
+            border-radius: 15px;
+            padding: 25px;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.2);
+            margin-bottom: 30px;
+        }
+        
+        .results-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 20px;
+        }
+        
+        .results-title {
+            font-size: 1.4em;
+            font-weight: bold;
+            color: #333;
+        }
+        
+        .copy-btn {
+            background: #667eea;
+            color: white;
+            border: none;
+            padding: 8px 16px;
+            border-radius: 8px;
+            cursor: pointer;
+            font-size: 0.9em;
+            font-weight: bold;
+            transition: background 0.3s;
+        }
+        
+        .copy-btn:hover {
+            background: #5a6fd6;
+        }
+        
+        .copy-btn.copied {
+            background: #28a745;
+        }
+        
+        .results-group-title {
+            font-size: 1.1em;
+            font-weight: bold;
+            color: #667eea;
+            margin: 15px 0 8px;
+        }
+        
+        .results-group-title:first-child {
+            margin-top: 0;
+        }
+        
+        .result-line {
+            font-size: 0.95em;
+            color: #333;
+            padding: 4px 0;
+            font-family: 'Segoe UI', monospace;
+        }
     </style>
 </head>
 <body>
@@ -307,6 +372,16 @@
         <div id="loading" class="loading">Cargando datos...</div>
         <div id="content" style="display: none;">
             <div class="games-grid" id="gamesGrid"></div>
+            
+            <hr class="results-divider">
+            
+            <div class="results-section" id="resultsSection">
+                <div class="results-header">
+                    <span class="results-title">📋 Resultados Hoy</span>
+                    <button class="copy-btn" id="copyBtn" onclick="copyResults()">📋 Copiar</button>
+                </div>
+                <div id="resultsContent"></div>
+            </div>
         </div>
     </div>
 
@@ -314,6 +389,52 @@
         // TODO: Replace with your API Gateway URL after deployment
         // Get this from: cd terraform && terraform output api_url
         const API_URL = 'https://5mvxgh2ju5.execute-api.us-east-1.amazonaws.com/prod';
+        
+        // Mapeo de nombres completos a apodos para WhatsApp
+        const NICKNAMES = {
+            'Rafael (A)': 'Rafa',
+            'Rubén (A)': 'QKracho',
+            'Julio (A)': 'Julito',
+            'Rodolfo (A)': 'Churry',
+            'Félix (A)': 'Félix',
+            'Leo (A)': 'Leo',
+            'Nico (A)': 'Nico',
+            'Elliot (A)': 'Elliot',
+            'Andrés (B)': 'Andrés',
+            'Luis (B)': 'Luis',
+            'Jesús (B)': 'Yisus',
+            'Héctor (B)': 'HS9',
+            'Edgar (B)': 'Edgar',
+            'Fabricio (B)': 'Fabri',
+            'César (B)': 'César',
+            'Pedro (B)': 'Pedro'
+        };
+        
+        // Orden fijo de los grupos
+        const GROUP_A_ORDER = ['Rafael (A)', 'Rubén (A)', 'Julio (A)', 'Rodolfo (A)', 'Félix (A)', 'Leo (A)', 'Nico (A)', 'Elliot (A)'];
+        const GROUP_B_ORDER = ['Andrés (B)', 'Luis (B)', 'Jesús (B)', 'Héctor (B)', 'Edgar (B)', 'Fabricio (B)', 'César (B)', 'Pedro (B)'];
+        
+        // Abreviaciones de equipos MLB
+        const TEAM_ABBR = {
+            'New York Yankees': 'NYY', 'Boston Red Sox': 'BOS', 'Toronto Blue Jays': 'TOR',
+            'Tampa Bay Rays': 'TB', 'Baltimore Orioles': 'BAL', 'Chicago White Sox': 'CWS',
+            'Cleveland Guardians': 'CLE', 'Detroit Tigers': 'DET', 'Kansas City Royals': 'KC',
+            'Minnesota Twins': 'MIN', 'Houston Astros': 'HOU', 'Los Angeles Angels': 'LAA',
+            'Athletics': 'ATH', 'Seattle Mariners': 'SEA', 'Texas Rangers': 'TEX',
+            'Atlanta Braves': 'ATL', 'Miami Marlins': 'MIA', 'New York Mets': 'NYM',
+            'Philadelphia Phillies': 'PHI', 'Washington Nationals': 'WSH', 'Chicago Cubs': 'CHC',
+            'Cincinnati Reds': 'CIN', 'Milwaukee Brewers': 'MIL', 'Pittsburgh Pirates': 'PIT',
+            'St. Louis Cardinals': 'STL', 'Arizona Diamondbacks': 'ARI', 'Colorado Rockies': 'COL',
+            'Los Angeles Dodgers': 'LAD', 'San Diego Padres': 'SD', 'San Francisco Giants': 'SF'
+        };
+        
+        function getAbbr(teamName) {
+            return TEAM_ABBR[teamName] || teamName;
+        }
+        
+        function getNickname(userName) {
+            return NICKNAMES[userName] || userName.replace(/ \([AB]\)$/, '');
+        }
         
         // Check if it's Spring Training (February or March)
         function checkSpringTraining() {
@@ -377,6 +498,9 @@
             // Update timestamp
             const now = new Date().toLocaleString('es-ES');
             document.getElementById('lastUpdate').textContent = 'Última actualización: ' + now;
+            
+            // Render WhatsApp-style results
+            renderResults(data);
         }
         
         function createGameCard(gameId, bets, scoreData) {
@@ -497,6 +621,92 @@
             card.innerHTML = scoreHTML + '<div class="bets-section"><div class="bets-title">Apuestas:</div>' + betsHTML + '</div>';
             
             return card;
+        }
+        
+        function renderResults(data) {
+            const bets = data.bets || [];
+            const scores = data.scores || [];
+            const scoresMap = {};
+            scores.forEach(s => { scoresMap[s.game_id] = s; });
+            
+            // Build a map of user -> bet info
+            const betMap = {};
+            bets.forEach(bet => {
+                betMap[bet.user] = bet;
+            });
+            
+            function buildLine(userName) {
+                const bet = betMap[userName];
+                if (!bet) return null;
+                
+                const nick = getNickname(userName);
+                const score = bet.current_score || scoresMap[bet.game_id];
+                
+                if (!score) {
+                    return { text: nick + ': ⏳', html: nick + ': ⏳' };
+                }
+                
+                const away = getAbbr(score.away_team);
+                const home = getAbbr(score.home_team);
+                const betAbbr = getAbbr(bet.team);
+                const isFinal = score.status === 'Final' || score.status === 'Game Over';
+                
+                if (!isFinal) {
+                    const line = nick + ': ' + away + ' @ ' + home + ' - ' + betAbbr + ' ⏳';
+                    return { text: line, html: line };
+                }
+                
+                const awayScore = score.away_score || 0;
+                const homeScore = score.home_score || 0;
+                const isAway = bet.team === score.away_team;
+                const betScore = isAway ? awayScore : homeScore;
+                const oppScore = isAway ? homeScore : awayScore;
+                const won = betScore > oppScore;
+                const icon = won ? ' ✅' : ' ❌';
+                
+                const line = nick + ': ' + away + ' @ ' + home + ' - ' + betAbbr + icon;
+                return { text: line, html: line };
+            }
+            
+            let textA = 'Grupo A\n';
+            let htmlA = '';
+            GROUP_A_ORDER.forEach(name => {
+                const line = buildLine(name);
+                if (line) {
+                    textA += line.text + '\n';
+                    htmlA += '<div class="result-line">' + line.html + '</div>';
+                }
+            });
+            
+            let textB = 'Grupo B\n';
+            let htmlB = '';
+            GROUP_B_ORDER.forEach(name => {
+                const line = buildLine(name);
+                if (line) {
+                    textB += line.text + '\n';
+                    htmlB += '<div class="result-line">' + line.html + '</div>';
+                }
+            });
+            
+            document.getElementById('resultsContent').innerHTML =
+                '<div class="results-group-title">Grupo A</div>' + htmlA +
+                '<div class="results-group-title">Grupo B</div>' + htmlB;
+            
+            // Store for copy
+            window._resultsText = textA + '\n' + textB;
+        }
+        
+        function copyResults() {
+            const text = window._resultsText || '';
+            navigator.clipboard.writeText(text.trim()).then(() => {
+                const btn = document.getElementById('copyBtn');
+                btn.textContent = '✅ Copiado';
+                btn.classList.add('copied');
+                setTimeout(() => {
+                    btn.textContent = '📋 Copiar';
+                    btn.classList.remove('copied');
+                }, 2000);
+            });
         }
         
         // Initial load
