@@ -74,6 +74,9 @@
                     <option value="A">Grupo: A</option>
                     <option value="B">Grupo: B</option>
                 </select>
+                <select id="fnJugador" onchange="renderFavNoFav()" style="background:#1a2d50; color:white; border:2px solid #2a3f65; padding:8px 15px; border-radius:8px; font-size:0.95em; cursor:pointer;">
+                    <option value="ALL">Jugador: ALL</option>
+                </select>
             </div>
             <div style="display:flex; align-items:center; justify-content:center; gap:40px; flex-wrap:wrap;">
                 <div style="text-align:center;">
@@ -92,19 +95,11 @@
                 </div>
             </div>
             
-            <!-- Formula + Jornada Pie -->
+            <!-- Resumen Jornadas -->
             <hr style="border:none; border-top:2px solid #2a3f65; margin:30px 0;">
-            <div id="fnFormulaTitle" style="text-align:center; font-size:1.1em; font-weight:bold; color:#667eea; margin-bottom:20px;">Resumen Jornadas de Apuestas</div>
-            <div style="display:flex; align-items:center; justify-content:center; gap:30px; flex-wrap:wrap;">
-                <div style="display:flex; align-items:center; gap:8px; flex-wrap:wrap; justify-content:center;">
-                    <div class="formula-card"><div class="formula-num" id="fnFormFav">0</div><div class="formula-label">Fav</div></div>
-                    <div class="formula-op">−</div>
-                    <div class="formula-card"><div class="formula-num" id="fnFormWFav">0</div><div class="formula-label">Aciertos Fav</div></div>
-                    <div class="formula-op">+</div>
-                    <div class="formula-card"><div class="formula-num" id="fnFormWNoFav">0</div><div class="formula-label">Aciertos NoFav</div></div>
-                    <div class="formula-op">=</div>
-                    <div class="formula-card formula-result"><div class="formula-num" id="fnFormResult">0</div><div class="formula-label">Total Jornada NoFav</div></div>
-                </div>
+            <div style="text-align:center; font-size:1.1em; font-weight:bold; color:#667eea; margin-bottom:20px;">Resumen Jornadas de Apuestas</div>
+            <div style="display:flex; align-items:center; justify-content:center; gap:40px; flex-wrap:wrap;">
+                <div id="fnDescription" style="max-width:400px; font-size:0.95em; color:#ccd; line-height:1.6; text-align:center;"></div>
                 <div style="text-align:center;">
                     <canvas id="jornadaPieChart" width="220" height="220"></canvas>
                 </div>
@@ -176,33 +171,6 @@
             font-weight: bold;
             color: #25D366;
             font-family: 'Courier New', monospace;
-        }
-        .formula-card {
-            background: #0f1f3d;
-            border: 2px solid #2a3f65;
-            border-radius: 12px;
-            padding: 12px 18px;
-            text-align: center;
-            min-width: 80px;
-        }
-        .formula-card.formula-result {
-            border-color: #25D366;
-        }
-        .formula-num {
-            font-size: 2.2em;
-            font-weight: bold;
-            color: #25D366;
-            font-family: 'Courier New', monospace;
-        }
-        .formula-label {
-            font-size: 0.7em;
-            color: #8899aa;
-            margin-top: 4px;
-        }
-        .formula-op {
-            font-size: 2em;
-            font-weight: bold;
-            color: #8899aa;
         }
     </style>
 
@@ -313,29 +281,38 @@
 
         function populateFechaDropdown() {
             const fechas = [...new Set(rawData.map(r => r.fecha).filter(Boolean))];
-            // Parse dates for chronological sorting (format: Wed-01-04-2026)
             fechas.sort((a, b) => {
                 const parseDate = (s) => {
                     const parts = s.split('-');
                     if (parts.length === 4) return new Date(parts[3], parts[2] - 1, parts[1]);
                     return new Date(s);
                 };
-                return parseDate(b) - parseDate(a); // Most recent first
+                return parseDate(b) - parseDate(a);
             });
             const sel = document.getElementById('fnFecha');
             sel.innerHTML = '<option value="ALL">Fecha: ALL</option>';
             fechas.forEach(f => {
                 sel.innerHTML += '<option value="' + f + '">' + f + '</option>';
             });
+
+            // Populate jugadores dropdown
+            const jugadores = [...new Set(rawData.map(r => r.jugador).filter(Boolean))].sort();
+            const selJ = document.getElementById('fnJugador');
+            selJ.innerHTML = '<option value="ALL">Jugador: ALL</option>';
+            jugadores.forEach(j => {
+                selJ.innerHTML += '<option value="' + j + '">' + j + '</option>';
+            });
         }
 
         function renderFavNoFav() {
             const fecha = document.getElementById('fnFecha').value;
             const grupo = document.getElementById('fnGrupo').value;
+            const jugador = document.getElementById('fnJugador').value;
 
             let filtered = rawData;
             if (fecha !== 'ALL') filtered = filtered.filter(r => r.fecha === fecha);
             if (grupo !== 'ALL') filtered = filtered.filter(r => r.jugador && r.jugador.endsWith('(' + grupo + ')'));
+            if (jugador !== 'ALL') filtered = filtered.filter(r => r.jugador === jugador);
 
             let totalFav = 0, totalNoFav = 0, wFav = 0, wNoFav = 0;
             filtered.forEach(r => {
@@ -391,19 +368,20 @@
                 }
             });
 
-            // Formula: Fav - Aciertos Fav + Aciertos NoFav = Total Jornada NoFav
+            // Description + Jornada pie
             const totalJornadaNoFav = totalFav - wFav + wNoFav;
             const totalJornadaFav = total - totalJornadaNoFav;
-            document.getElementById('fnFormFav').textContent = totalFav;
-            document.getElementById('fnFormWFav').textContent = wFav;
-            document.getElementById('fnFormWNoFav').textContent = wNoFav;
-            document.getElementById('fnFormResult').textContent = totalJornadaNoFav;
+            const jFavPct = total > 0 ? ((totalJornadaFav / total) * 100).toFixed(1) : 0;
+            const jNoFavPct = total > 0 ? ((totalJornadaNoFav / total) * 100).toFixed(1) : 0;
+
+            document.getElementById('fnDescription').innerHTML =
+                'De las <strong>' + total + '</strong> apuestas realizadas, el favorito ganó en <strong style="color:#3b82f6;">' +
+                totalJornadaFav + '</strong> ocasiones (<strong>' + jFavPct + '%</strong>) mientras que el no favorito se impuso en <strong style="color:#e74c3c;">' +
+                totalJornadaNoFav + '</strong> (<strong>' + jNoFavPct + '%</strong>).';
 
             // Jornada pie chart
             const ctx2 = document.getElementById('jornadaPieChart').getContext('2d');
             if (jornadaPieInstance) jornadaPieInstance.destroy();
-            const jFavPct = total > 0 ? ((totalJornadaFav / total) * 100).toFixed(1) : 0;
-            const jNoFavPct = total > 0 ? ((totalJornadaNoFav / total) * 100).toFixed(1) : 0;
             jornadaPieInstance = new Chart(ctx2, {
                 type: 'pie',
                 data: {
