@@ -60,7 +60,7 @@
 
         <!-- Dashboard: Tabla General por Grupo -->
         <div id="dash-grupo" class="dashboard-panel" style="display:none;">
-            <div id="grupoContent" style="display:flex; gap:20px; flex-wrap:wrap;"></div>
+            <div id="grupoContent" style="display:flex; flex-direction:column; gap:30px;"></div>
         </div>
 
         <!-- Placeholder dashboards -->
@@ -106,8 +106,7 @@
         .grupo-table .jugador { color: #e74c3c; font-weight: bold; }
         .grupo-table .pct { font-weight: bold; }
         .grupo-card {
-            flex: 1;
-            min-width: 300px;
+            width: 100%;
             background: #0f1f3d;
             border-radius: 12px;
             padding: 15px;
@@ -116,7 +115,6 @@
         @media (max-width: 700px) {
             .grupo-table { font-size: 0.75em; }
             .grupo-table th, .grupo-table td { padding: 6px 4px; }
-            #grupoContent { flex-direction: column; }
         }
     </style>
 
