@@ -94,7 +94,7 @@
             
             <!-- Formula + Jornada Pie -->
             <hr style="border:none; border-top:2px solid #2a3f65; margin:30px 0;">
-            <div id="fnFormulaTitle" style="text-align:center; font-size:1.1em; font-weight:bold; color:#667eea; margin-bottom:20px;">Resumen Jornada</div>
+            <div id="fnFormulaTitle" style="text-align:center; font-size:1.1em; font-weight:bold; color:#667eea; margin-bottom:20px;">Resumen Jornadas de Apuestas</div>
             <div style="display:flex; align-items:center; justify-content:center; gap:30px; flex-wrap:wrap;">
                 <div style="display:flex; align-items:center; gap:8px; flex-wrap:wrap; justify-content:center;">
                     <div class="formula-card"><div class="formula-num" id="fnFormFav">0</div><div class="formula-label">Fav</div></div>
@@ -367,7 +367,7 @@
             favPieInstance = new Chart(ctx, {
                 type: 'pie',
                 data: {
-                    labels: ['Fav (' + totalFav + ')', 'NoFav (' + totalNoFav + ')'],
+                    labels: ['Fav (' + totalFav + ') ' + favPct + '%', 'NoFav (' + totalNoFav + ') ' + noFavPct + '%'],
                     datasets: [{
                         data: [totalFav, totalNoFav],
                         backgroundColor: ['#3b82f6', '#e74c3c'],
@@ -407,7 +407,7 @@
             jornadaPieInstance = new Chart(ctx2, {
                 type: 'pie',
                 data: {
-                    labels: ['Jornada Fav (' + totalJornadaFav + ')', 'Jornada NoFav (' + totalJornadaNoFav + ')'],
+                    labels: ['Jornada Fav (' + totalJornadaFav + ') ' + jFavPct + '%', 'Jornada NoFav (' + totalJornadaNoFav + ') ' + jNoFavPct + '%'],
                     datasets: [{
                         data: [totalJornadaFav, totalJornadaNoFav],
                         backgroundColor: ['#3b82f6', '#e74c3c'],
