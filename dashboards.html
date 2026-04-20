@@ -82,11 +82,11 @@
                 </div>
                 <div style="display:flex; gap:25px;">
                     <div class="scoreboard">
-                        <div class="scoreboard-label">W-Fav</div>
+                        <div class="scoreboard-label">Acierto Fav</div>
                         <div class="scoreboard-number" id="fnWFav">0</div>
                     </div>
                     <div class="scoreboard">
-                        <div class="scoreboard-label">W-NoFav</div>
+                        <div class="scoreboard-label">Acierto NoFav</div>
                         <div class="scoreboard-number" id="fnWNoFav">0</div>
                     </div>
                 </div>
@@ -266,7 +266,16 @@
         let favPieInstance = null;
 
         function populateFechaDropdown() {
-            const fechas = [...new Set(rawData.map(r => r.fecha).filter(Boolean))].sort();
+            const fechas = [...new Set(rawData.map(r => r.fecha).filter(Boolean))];
+            // Parse dates for chronological sorting (format: Wed-01-04-2026)
+            fechas.sort((a, b) => {
+                const parseDate = (s) => {
+                    const parts = s.split('-');
+                    if (parts.length === 4) return new Date(parts[3], parts[2] - 1, parts[1]);
+                    return new Date(s);
+                };
+                return parseDate(b) - parseDate(a); // Most recent first
+            });
             const sel = document.getElementById('fnFecha');
             sel.innerHTML = '<option value="ALL">Fecha: ALL</option>';
             fechas.forEach(f => {
