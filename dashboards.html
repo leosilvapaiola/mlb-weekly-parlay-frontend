@@ -82,11 +82,11 @@
                 </div>
                 <div style="display:flex; gap:25px;">
                     <div class="scoreboard">
-                        <div class="scoreboard-label">Acierto Fav</div>
+                        <div class="scoreboard-label">Aciertos Fav</div>
                         <div class="scoreboard-number" id="fnWFav">0</div>
                     </div>
                     <div class="scoreboard">
-                        <div class="scoreboard-label">Acierto NoFav</div>
+                        <div class="scoreboard-label">Aciertos NoFav</div>
                         <div class="scoreboard-number" id="fnWNoFav">0</div>
                     </div>
                 </div>
@@ -307,8 +307,8 @@
                 }
             });
 
-            document.getElementById('fnWFav').textContent = wFav;
-            document.getElementById('fnWNoFav').textContent = wNoFav;
+            document.getElementById('fnWFav').innerHTML = wFav + '<span style="font-size:0.4em; color:#8899aa; margin-left:4px;">(' + (totalFav > 0 ? ((wFav/totalFav)*100).toFixed(0) : 0) + '%)</span>';
+            document.getElementById('fnWNoFav').innerHTML = wNoFav + '<span style="font-size:0.4em; color:#8899aa; margin-left:4px;">(' + (totalNoFav > 0 ? ((wNoFav/totalNoFav)*100).toFixed(0) : 0) + '%)</span>';
 
             // Pie chart
             const ctx = document.getElementById('favPieChart').getContext('2d');
