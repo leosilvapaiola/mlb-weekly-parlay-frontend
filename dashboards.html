@@ -91,6 +91,24 @@
                     </div>
                 </div>
             </div>
+            
+            <!-- Formula + Jornada Pie -->
+            <hr style="border:none; border-top:2px solid #2a3f65; margin:30px 0;">
+            <div id="fnFormulaTitle" style="text-align:center; font-size:1.1em; font-weight:bold; color:#667eea; margin-bottom:20px;">Resumen Jornada</div>
+            <div style="display:flex; align-items:center; justify-content:center; gap:30px; flex-wrap:wrap;">
+                <div style="display:flex; align-items:center; gap:8px; flex-wrap:wrap; justify-content:center;">
+                    <div class="formula-card"><div class="formula-num" id="fnFormFav">0</div><div class="formula-label">Fav</div></div>
+                    <div class="formula-op">−</div>
+                    <div class="formula-card"><div class="formula-num" id="fnFormWFav">0</div><div class="formula-label">Aciertos Fav</div></div>
+                    <div class="formula-op">+</div>
+                    <div class="formula-card"><div class="formula-num" id="fnFormWNoFav">0</div><div class="formula-label">Aciertos NoFav</div></div>
+                    <div class="formula-op">=</div>
+                    <div class="formula-card formula-result"><div class="formula-num" id="fnFormResult">0</div><div class="formula-label">Total Jornada NoFav</div></div>
+                </div>
+                <div style="text-align:center;">
+                    <canvas id="jornadaPieChart" width="220" height="220"></canvas>
+                </div>
+            </div>
         </div>
         <div id="dash-placeholder2" class="dashboard-panel" style="display:none;">
             <div style="text-align:center; padding:60px; background:#0f1f3d; border-radius:15px;">
@@ -158,6 +176,33 @@
             font-weight: bold;
             color: #25D366;
             font-family: 'Courier New', monospace;
+        }
+        .formula-card {
+            background: #0f1f3d;
+            border: 2px solid #2a3f65;
+            border-radius: 12px;
+            padding: 12px 18px;
+            text-align: center;
+            min-width: 80px;
+        }
+        .formula-card.formula-result {
+            border-color: #25D366;
+        }
+        .formula-num {
+            font-size: 2.2em;
+            font-weight: bold;
+            color: #25D366;
+            font-family: 'Courier New', monospace;
+        }
+        .formula-label {
+            font-size: 0.7em;
+            color: #8899aa;
+            margin-top: 4px;
+        }
+        .formula-op {
+            font-size: 2em;
+            font-weight: bold;
+            color: #8899aa;
         }
     </style>
 
@@ -264,6 +309,7 @@
     <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.7/dist/chart.umd.min.js"></script>
     <script>
         let favPieInstance = null;
+        let jornadaPieInstance = null;
 
         function populateFechaDropdown() {
             const fechas = [...new Set(rawData.map(r => r.fecha).filter(Boolean))];
@@ -337,6 +383,46 @@
                             callbacks: {
                                 label: function(ctx) {
                                     const pct = ctx.label.includes('Fav (') ? favPct : noFavPct;
+                                    return ctx.label + ' - ' + pct + '%';
+                                }
+                            }
+                        }
+                    }
+                }
+            });
+
+            // Formula: Fav - Aciertos Fav + Aciertos NoFav = Total Jornada NoFav
+            const totalJornadaNoFav = totalFav - wFav + wNoFav;
+            const totalJornadaFav = total - totalJornadaNoFav;
+            document.getElementById('fnFormFav').textContent = totalFav;
+            document.getElementById('fnFormWFav').textContent = wFav;
+            document.getElementById('fnFormWNoFav').textContent = wNoFav;
+            document.getElementById('fnFormResult').textContent = totalJornadaNoFav;
+
+            // Jornada pie chart
+            const ctx2 = document.getElementById('jornadaPieChart').getContext('2d');
+            if (jornadaPieInstance) jornadaPieInstance.destroy();
+            const jFavPct = total > 0 ? ((totalJornadaFav / total) * 100).toFixed(1) : 0;
+            const jNoFavPct = total > 0 ? ((totalJornadaNoFav / total) * 100).toFixed(1) : 0;
+            jornadaPieInstance = new Chart(ctx2, {
+                type: 'pie',
+                data: {
+                    labels: ['Jornada Fav (' + totalJornadaFav + ')', 'Jornada NoFav (' + totalJornadaNoFav + ')'],
+                    datasets: [{
+                        data: [totalJornadaFav, totalJornadaNoFav],
+                        backgroundColor: ['#3b82f6', '#e74c3c'],
+                        borderColor: ['#2563eb', '#c0392b'],
+                        borderWidth: 2
+                    }]
+                },
+                options: {
+                    responsive: false,
+                    plugins: {
+                        legend: { position: 'bottom', labels: { color: 'white', font: { size: 13 } } },
+                        tooltip: {
+                            callbacks: {
+                                label: function(ctx) {
+                                    const pct = ctx.dataIndex === 0 ? jFavPct : jNoFavPct;
                                     return ctx.label + ' - ' + pct + '%';
                                 }
                             }
