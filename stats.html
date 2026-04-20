@@ -168,13 +168,13 @@
             let html = '<table class="stats-table"><thead><tr>';
             const cols = [
                 { key: 'jugador', label: 'Jugador' },
-                { key: 'aciertos', label: 'Aciertos' },
-                { key: 'desaciertos', label: 'Desaciertos' },
+                { key: 'aciertos', label: 'W' },
+                { key: 'desaciertos', label: 'L' },
                 { key: 'pct', label: '%' },
                 { key: 'fav', label: 'Fav' },
-                { key: 'aciertoFav', label: 'AciertoFav' },
+                { key: 'aciertoFav', label: 'W-Fav' },
                 { key: 'noFav', label: 'NoFav' },
-                { key: 'aciertoNoFav', label: 'AciertoNoFav' }
+                { key: 'aciertoNoFav', label: 'W-NoFav' }
             ];
             cols.forEach(c => {
                 html += '<th class="' + cls(c.key) + '" onclick="sortData(\'' + c.key + '\')">' + c.label + arrow(c.key) + '</th>';

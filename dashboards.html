@@ -182,10 +182,10 @@
             const arrow = (c) => s.col !== c ? '<span class="sort-arrow">⇅</span>' : '<span class="sort-arrow">' + (s.asc ? '▲' : '▼') + '</span>';
             const cls = (c) => s.col === c ? 'sorted' : '';
             const cols = [
-                { key: 'jugador', label: 'Jugador' }, { key: 'aciertos', label: 'Aciertos' },
-                { key: 'desaciertos', label: 'Desaciertos' }, { key: 'pct', label: '%' },
-                { key: 'fav', label: 'Fav' }, { key: 'aciertoFav', label: 'AciertoFav' },
-                { key: 'noFav', label: 'NoFav' }, { key: 'aciertoNoFav', label: 'AciertoNoFav' }
+                { key: 'jugador', label: 'Jugador' }, { key: 'aciertos', label: 'W' },
+                { key: 'desaciertos', label: 'L' }, { key: 'pct', label: '%' },
+                { key: 'fav', label: 'Fav' }, { key: 'aciertoFav', label: 'W-Fav' },
+                { key: 'noFav', label: 'NoFav' }, { key: 'aciertoNoFav', label: 'W-NoFav' }
             ];
             let html = '<table class="grupo-table"><thead><tr>';
             cols.forEach(c => {
