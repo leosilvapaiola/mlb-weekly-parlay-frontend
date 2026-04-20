@@ -75,21 +75,13 @@
                 <h1>Tabla General 2026</h1>
             </div>
             <a href="index.html" class="back-btn">⬅ Volver al Tracker</a>
+            <a href="dashboards.html" class="back-btn" style="background:#e67e22; margin-left:10px;">📊 Estadísticas</a>
         </header>
         <div id="loading" style="text-align:center; padding:40px; font-size:1.2em;">Cargando datos...</div>
         <div id="tableContainer" style="display:none;"></div>
     </div>
 
     <script>
-        const NICKNAMES = {
-            'Rafael (A)': 'Rafa', 'Rubén (A)': 'QKracho', 'Julio (A)': 'Julito',
-            'Rodolfo (A)': 'Churry', 'Félix (A)': 'Félix', 'Leo (A)': 'Leo',
-            'Nico (A)': 'Nico', 'Elliot (A)': 'Elliot', 'Andrés (B)': 'Andrés',
-            'Luis (B)': 'Luis', 'Jesús (B)': 'Yisus', 'Héctor (B)': 'HS9',
-            'Edgar (B)': 'Edgar', 'Fabricio (B)': 'Fabri', 'César (B)': 'César',
-            'Pedro (B)': 'Pedro'
-        };
-
         let currentSort = { col: 'pct', asc: false };
         let tableData = [];
 
@@ -190,10 +182,9 @@
             html += '</tr></thead><tbody>';
 
             sorted.forEach(row => {
-                const nick = NICKNAMES[row.jugador] || row.jugador;
                 const pctStr = (row.pct * 100).toFixed(0) + '%';
                 html += '<tr>' +
-                    '<td class="jugador">' + nick + '</td>' +
+                    '<td class="jugador">' + row.jugador + '</td>' +
                     '<td>' + row.aciertos + '</td>' +
                     '<td>' + row.desaciertos + '</td>' +
                     '<td class="pct">' + pctStr + '</td>' +

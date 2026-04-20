@@ -1,0 +1,225 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>MLB Parlay Tracker - Estadísticas 2026</title>
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: #0a1628;
+            color: white;
+            min-height: 100vh;
+            padding: 20px;
+        }
+        .container { max-width: 1200px; margin: 0 auto; }
+        header { text-align: center; margin-bottom: 25px; }
+        .logo-row { display: flex; align-items: center; justify-content: center; gap: 15px; margin-bottom: 10px; }
+        .mlb-logo { width: 50px; height: 50px; }
+        h1 { font-size: 1.8em; }
+        .nav-row { margin-top: 12px; display: flex; align-items: center; justify-content: center; gap: 10px; flex-wrap: wrap; }
+        .nav-btn {
+            display: inline-block;
+            background: #667eea;
+            color: white;
+            text-decoration: none;
+            padding: 8px 20px;
+            border-radius: 20px;
+            font-size: 0.9em;
+            transition: background 0.3s;
+        }
+        .nav-btn:hover { background: #5a6fd6; }
+</style>
+</head>
+<body>
+    <div class="container">
+        <header>
+            <div class="logo-row">
+                <img src="https://www.mlbstatic.com/team-logos/league-on-dark/1.svg" alt="MLB" class="mlb-logo">
+                <h1>Estadísticas 2026</h1>
+            </div>
+            <div class="nav-row">
+                <a href="index.html" class="nav-btn">⬅ Tracker</a>
+                <a href="stats.html" class="nav-btn">📋 Tabla General</a>
+            </div>
+        </header>
+
+        <div style="text-align:center; margin-bottom:25px;">
+            <select id="dashSelect" onchange="switchDashboard(this.value)" style="
+                background:#1a2d50; color:white; border:2px solid #2a3f65;
+                padding:10px 20px; border-radius:10px; font-size:1em;
+                cursor:pointer; min-width:280px;">
+                <option value="grupo">Tabla General por Grupo</option>
+                <option value="placeholder1">Dashboard 3 (próximamente)</option>
+                <option value="placeholder2">Dashboard 4 (próximamente)</option>
+            </select>
+        </div>
+
+        <div id="loading" style="text-align:center; padding:40px; font-size:1.2em;">Cargando datos...</div>
+
+        <!-- Dashboard: Tabla General por Grupo -->
+        <div id="dash-grupo" class="dashboard-panel" style="display:none;">
+            <div id="grupoContent" style="display:flex; gap:20px; flex-wrap:wrap;"></div>
+        </div>
+
+        <!-- Placeholder dashboards -->
+        <div id="dash-placeholder1" class="dashboard-panel" style="display:none;">
+            <div style="text-align:center; padding:60px; background:#0f1f3d; border-radius:15px;">
+                <div style="font-size:3em; margin-bottom:15px;">🚧</div>
+                <div style="font-size:1.2em; opacity:0.7;">Dashboard en construcción</div>
+                <div style="font-size:0.9em; opacity:0.5; margin-top:8px;">Próximamente</div>
+            </div>
+        </div>
+        <div id="dash-placeholder2" class="dashboard-panel" style="display:none;">
+            <div style="text-align:center; padding:60px; background:#0f1f3d; border-radius:15px;">
+                <div style="font-size:3em; margin-bottom:15px;">🚧</div>
+                <div style="font-size:1.2em; opacity:0.7;">Dashboard en construcción</div>
+                <div style="font-size:0.9em; opacity:0.5; margin-top:8px;">Próximamente</div>
+            </div>
+        </div>
+    </div>
+
+    <style>
+        .grupo-table {
+            width: 100%;
+            border-collapse: collapse;
+            background: #0f1f3d;
+            border-radius: 10px;
+            overflow: hidden;
+            font-size: 0.9em;
+        }
+        .grupo-table th {
+            background: #1a2d50;
+            padding: 10px 8px;
+            text-align: left;
+            cursor: pointer;
+            user-select: none;
+            white-space: nowrap;
+            border-bottom: 2px solid #2a3f65;
+        }
+        .grupo-table th:hover { background: #243a5e; }
+        .grupo-table th .sort-arrow { margin-left: 3px; font-size: 0.7em; opacity: 0.5; }
+        .grupo-table th.sorted .sort-arrow { opacity: 1; }
+        .grupo-table td { padding: 8px; border-bottom: 1px solid #1a2d50; }
+        .grupo-table tr:hover td { background: #162744; }
+        .grupo-table .jugador { color: #e74c3c; font-weight: bold; }
+        .grupo-table .pct { font-weight: bold; }
+        .grupo-card {
+            flex: 1;
+            min-width: 300px;
+            background: #0f1f3d;
+            border-radius: 12px;
+            padding: 15px;
+        }
+        .grupo-card h3 { text-align: center; margin-bottom: 12px; color: #667eea; }
+        @media (max-width: 700px) {
+            .grupo-table { font-size: 0.75em; }
+            .grupo-table th, .grupo-table td { padding: 6px 4px; }
+            #grupoContent { flex-direction: column; }
+        }
+    </style>
+
+    <script>
+        let rawData = [];
+        let sortState = { A: { col: 'pct', asc: false }, B: { col: 'pct', asc: false } };
+
+        function switchDashboard(id) {
+            document.querySelectorAll('.dashboard-panel').forEach(el => el.style.display = 'none');
+            const panel = document.getElementById('dash-' + id);
+            if (panel) panel.style.display = 'block';
+        }
+
+        async function loadData() {
+            try {
+                const resp = await fetch('data/history.json');
+                if (!resp.ok) throw new Error('No se pudo cargar history.json');
+                rawData = await resp.json();
+                renderGrupos();
+                document.getElementById('loading').style.display = 'none';
+                switchDashboard('grupo');
+            } catch (e) {
+                document.getElementById('loading').textContent = 'Error: ' + e.message;
+            }
+        }
+
+        function computeGroupStats(records, group) {
+            const suffix = '(' + group + ')';
+            const filtered = records.filter(r => r.jugador && r.jugador.endsWith(suffix));
+            const players = {};
+            filtered.forEach(r => {
+                const name = r.jugador;
+                if (!players[name]) {
+                    players[name] = { jugador: name, aciertos: 0, desaciertos: 0, fav: 0, aciertoFav: 0, noFav: 0, aciertoNoFav: 0 };
+                }
+                const p = players[name];
+                const isWin = r.resultado === 'Ganador';
+                const isLoss = r.resultado === 'Perdedor';
+                if (isWin) p.aciertos++;
+                if (isLoss) p.desaciertos++;
+                const oddsLocal = Number(r.odds_local) || 0;
+                const oddsVisitante = Number(r.odds_visitante) || 0;
+                let favTeam = '';
+                if (oddsLocal !== 0 || oddsVisitante !== 0) {
+                    favTeam = oddsLocal > oddsVisitante ? r.equipo_visitante : r.equipo_local;
+                }
+                const apostoFav = favTeam && r.equipo_apostado === favTeam;
+                if (apostoFav) { p.fav++; if (isWin) p.aciertoFav++; }
+                else if (favTeam) { p.noFav++; if (isWin) p.aciertoNoFav++; }
+            });
+            return Object.values(players).map(p => {
+                const total = p.aciertos + p.desaciertos;
+                p.pct = total > 0 ? p.aciertos / total : 0;
+                return p;
+            });
+        }
+
+        function renderGroupTable(data, group) {
+            const s = sortState[group];
+            const sorted = [...data].sort((a, b) => {
+                let va = a[s.col], vb = b[s.col];
+                if (typeof va === 'string') return s.asc ? va.localeCompare(vb) : vb.localeCompare(va);
+                return s.asc ? va - vb : vb - va;
+            });
+            const arrow = (c) => s.col !== c ? '<span class="sort-arrow">⇅</span>' : '<span class="sort-arrow">' + (s.asc ? '▲' : '▼') + '</span>';
+            const cls = (c) => s.col === c ? 'sorted' : '';
+            const cols = [
+                { key: 'jugador', label: 'Jugador' }, { key: 'aciertos', label: 'Aciertos' },
+                { key: 'desaciertos', label: 'Desaciertos' }, { key: 'pct', label: '%' },
+                { key: 'fav', label: 'Fav' }, { key: 'aciertoFav', label: 'AciertoFav' },
+                { key: 'noFav', label: 'NoFav' }, { key: 'aciertoNoFav', label: 'AciertoNoFav' }
+            ];
+            let html = '<table class="grupo-table"><thead><tr>';
+            cols.forEach(c => {
+                html += '<th class="' + cls(c.key) + '" onclick="sortGroup(\'' + group + '\',\'' + c.key + '\')">' + c.label + arrow(c.key) + '</th>';
+            });
+            html += '</tr></thead><tbody>';
+            sorted.forEach(row => {
+                html += '<tr><td class="jugador">' + row.jugador + '</td>' +
+                    '<td>' + row.aciertos + '</td><td>' + row.desaciertos + '</td>' +
+                    '<td class="pct">' + (row.pct * 100).toFixed(0) + '%</td>' +
+                    '<td>' + row.fav + '</td><td>' + row.aciertoFav + '</td>' +
+                    '<td>' + row.noFav + '</td><td>' + row.aciertoNoFav + '</td></tr>';
+            });
+            html += '</tbody></table>';
+            return html;
+        }
+
+        function sortGroup(group, col) {
+            const s = sortState[group];
+            if (s.col === col) { s.asc = !s.asc; } else { s.col = col; s.asc = col === 'jugador'; }
+            renderGrupos();
+        }
+
+        function renderGrupos() {
+            const dataA = computeGroupStats(rawData, 'A');
+            const dataB = computeGroupStats(rawData, 'B');
+            document.getElementById('grupoContent').innerHTML =
+                '<div class="grupo-card"><h3>Grupo A</h3>' + renderGroupTable(dataA, 'A') + '</div>' +
+                '<div class="grupo-card"><h3>Grupo B</h3>' + renderGroupTable(dataB, 'B') + '</div>';
+        }
+
+        loadData();
+    </script>
+</body>
+</html>
