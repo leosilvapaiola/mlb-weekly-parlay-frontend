@@ -51,7 +51,7 @@
                 padding:10px 20px; border-radius:10px; font-size:1em;
                 cursor:pointer; min-width:280px;">
                 <option value="grupo">Tabla General por Grupo</option>
-                <option value="placeholder1">Dashboard 3 (próximamente)</option>
+                <option value="favnofav">Métricas Fav/NoFav</option>
                 <option value="placeholder2">Dashboard 4 (próximamente)</option>
             </select>
         </div>
@@ -63,12 +63,33 @@
             <div id="grupoContent" style="display:flex; flex-direction:column; gap:30px;"></div>
         </div>
 
-        <!-- Placeholder dashboards -->
-        <div id="dash-placeholder1" class="dashboard-panel" style="display:none;">
-            <div style="text-align:center; padding:60px; background:#0f1f3d; border-radius:15px;">
-                <div style="font-size:3em; margin-bottom:15px;">🚧</div>
-                <div style="font-size:1.2em; opacity:0.7;">Dashboard en construcción</div>
-                <div style="font-size:0.9em; opacity:0.5; margin-top:8px;">Próximamente</div>
+        <!-- Dashboard: Métricas Fav/NoFav -->
+        <div id="dash-favnofav" class="dashboard-panel" style="display:none;">
+            <div style="display:flex; gap:15px; justify-content:center; flex-wrap:wrap; margin-bottom:25px;">
+                <select id="fnFecha" onchange="renderFavNoFav()" style="background:#1a2d50; color:white; border:2px solid #2a3f65; padding:8px 15px; border-radius:8px; font-size:0.95em; cursor:pointer;">
+                    <option value="ALL">Fecha: ALL</option>
+                </select>
+                <select id="fnGrupo" onchange="renderFavNoFav()" style="background:#1a2d50; color:white; border:2px solid #2a3f65; padding:8px 15px; border-radius:8px; font-size:0.95em; cursor:pointer;">
+                    <option value="ALL">Grupo: ALL</option>
+                    <option value="A">Grupo: A</option>
+                    <option value="B">Grupo: B</option>
+                </select>
+            </div>
+            <div style="display:flex; align-items:center; justify-content:center; gap:40px; flex-wrap:wrap;">
+                <div style="text-align:center;">
+                    <div style="font-size:1.1em; font-weight:bold; margin-bottom:10px; color:#667eea;">Selección Fav / NoFav</div>
+                    <canvas id="favPieChart" width="260" height="260"></canvas>
+                </div>
+                <div style="display:flex; gap:25px;">
+                    <div class="scoreboard">
+                        <div class="scoreboard-label">W-Fav</div>
+                        <div class="scoreboard-number" id="fnWFav">0</div>
+                    </div>
+                    <div class="scoreboard">
+                        <div class="scoreboard-label">W-NoFav</div>
+                        <div class="scoreboard-number" id="fnWNoFav">0</div>
+                    </div>
+                </div>
             </div>
         </div>
         <div id="dash-placeholder2" class="dashboard-panel" style="display:none;">
@@ -115,6 +136,28 @@
         @media (max-width: 700px) {
             .grupo-table { font-size: 0.75em; }
             .grupo-table th, .grupo-table td { padding: 6px 4px; }
+        }
+        .scoreboard {
+            background: #0f1f3d;
+            border: 3px solid #2a3f65;
+            border-radius: 15px;
+            padding: 20px 30px;
+            text-align: center;
+            min-width: 120px;
+        }
+        .scoreboard-label {
+            font-size: 1em;
+            font-weight: bold;
+            color: #8899aa;
+            margin-bottom: 8px;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+        }
+        .scoreboard-number {
+            font-size: 3em;
+            font-weight: bold;
+            color: #25D366;
+            font-family: 'Courier New', monospace;
         }
     </style>
 
@@ -217,6 +260,90 @@
                 '<div class="grupo-card"><h3>Grupo B</h3>' + renderGroupTable(dataB, 'B') + '</div>';
         }
 
+    </script>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.7/dist/chart.umd.min.js"></script>
+    <script>
+        let favPieInstance = null;
+
+        function populateFechaDropdown() {
+            const fechas = [...new Set(rawData.map(r => r.fecha).filter(Boolean))].sort();
+            const sel = document.getElementById('fnFecha');
+            sel.innerHTML = '<option value="ALL">Fecha: ALL</option>';
+            fechas.forEach(f => {
+                sel.innerHTML += '<option value="' + f + '">' + f + '</option>';
+            });
+        }
+
+        function renderFavNoFav() {
+            const fecha = document.getElementById('fnFecha').value;
+            const grupo = document.getElementById('fnGrupo').value;
+
+            let filtered = rawData;
+            if (fecha !== 'ALL') filtered = filtered.filter(r => r.fecha === fecha);
+            if (grupo !== 'ALL') filtered = filtered.filter(r => r.jugador && r.jugador.endsWith('(' + grupo + ')'));
+
+            let totalFav = 0, totalNoFav = 0, wFav = 0, wNoFav = 0;
+            filtered.forEach(r => {
+                const oddsLocal = Number(r.odds_local) || 0;
+                const oddsVisitante = Number(r.odds_visitante) || 0;
+                if (oddsLocal === 0 && oddsVisitante === 0) return;
+                const favTeam = oddsLocal > oddsVisitante ? r.equipo_visitante : r.equipo_local;
+                const isWin = r.resultado === 'Ganador';
+                if (r.equipo_apostado === favTeam) {
+                    totalFav++;
+                    if (isWin) wFav++;
+                } else {
+                    totalNoFav++;
+                    if (isWin) wNoFav++;
+                }
+            });
+
+            document.getElementById('fnWFav').textContent = wFav;
+            document.getElementById('fnWNoFav').textContent = wNoFav;
+
+            // Pie chart
+            const ctx = document.getElementById('favPieChart').getContext('2d');
+            if (favPieInstance) favPieInstance.destroy();
+
+            const total = totalFav + totalNoFav;
+            const favPct = total > 0 ? ((totalFav / total) * 100).toFixed(1) : 0;
+            const noFavPct = total > 0 ? ((totalNoFav / total) * 100).toFixed(1) : 0;
+
+            favPieInstance = new Chart(ctx, {
+                type: 'pie',
+                data: {
+                    labels: ['Fav (' + totalFav + ')', 'NoFav (' + totalNoFav + ')'],
+                    datasets: [{
+                        data: [totalFav, totalNoFav],
+                        backgroundColor: ['#3b82f6', '#e74c3c'],
+                        borderColor: ['#2563eb', '#c0392b'],
+                        borderWidth: 2
+                    }]
+                },
+                options: {
+                    responsive: false,
+                    plugins: {
+                        legend: { position: 'bottom', labels: { color: 'white', font: { size: 14 } } },
+                        tooltip: {
+                            callbacks: {
+                                label: function(ctx) {
+                                    const pct = ctx.label.includes('Fav (') ? favPct : noFavPct;
+                                    return ctx.label + ' - ' + pct + '%';
+                                }
+                            }
+                        }
+                    }
+                }
+            });
+        }
+
+        // Hook into loadData to also init Fav/NoFav
+        const _origLoadData = loadData;
+        loadData = async function() {
+            await _origLoadData();
+            populateFechaDropdown();
+            renderFavNoFav();
+        };
         loadData();
     </script>
 </body>
