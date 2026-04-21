@@ -74,9 +74,6 @@
                     <option value="A">Grupo: A</option>
                     <option value="B">Grupo: B</option>
                 </select>
-                <select id="fnJugador" onchange="renderFavNoFav()" style="background:#1a2d50; color:white; border:2px solid #2a3f65; padding:8px 15px; border-radius:8px; font-size:0.95em; cursor:pointer;">
-                    <option value="ALL">Jugador: ALL</option>
-                </select>
             </div>
             <div style="display:flex; align-items:center; justify-content:center; gap:40px; flex-wrap:wrap;">
                 <div style="text-align:center;">
@@ -94,6 +91,7 @@
                     </div>
                 </div>
             </div>
+            <div id="fnTopDescription" style="max-width:600px; margin:15px auto 0; font-size:0.85em; color:#8899aa; line-height:1.5; text-align:center;"></div>
             
             <!-- Resumen Jornadas -->
             <hr style="border:none; border-top:2px solid #2a3f65; margin:30px 0;">
@@ -349,25 +347,15 @@
             fechas.forEach(f => {
                 sel.innerHTML += '<option value="' + f + '">' + f + '</option>';
             });
-
-            // Populate jugadores dropdown
-            const jugadores = [...new Set(rawData.map(r => r.jugador).filter(Boolean))].sort();
-            const selJ = document.getElementById('fnJugador');
-            selJ.innerHTML = '<option value="ALL">Jugador: ALL</option>';
-            jugadores.forEach(j => {
-                selJ.innerHTML += '<option value="' + j + '">' + j + '</option>';
-            });
         }
 
         function renderFavNoFav() {
             const fecha = document.getElementById('fnFecha').value;
             const grupo = document.getElementById('fnGrupo').value;
-            const jugador = document.getElementById('fnJugador').value;
 
             let filtered = rawData;
             if (fecha !== 'ALL') filtered = filtered.filter(r => r.fecha === fecha);
             if (grupo !== 'ALL') filtered = filtered.filter(r => r.jugador && r.jugador.endsWith('(' + grupo + ')'));
-            if (jugador !== 'ALL') filtered = filtered.filter(r => r.jugador === jugador);
 
             let totalFav = 0, totalNoFav = 0, wFav = 0, wNoFav = 0;
             filtered.forEach(r => {
@@ -387,6 +375,14 @@
 
             document.getElementById('fnWFav').innerHTML = wFav + '<span style="font-size:0.4em; color:#8899aa; margin-left:4px;">(' + (totalFav > 0 ? ((wFav/totalFav)*100).toFixed(0) : 0) + '%)</span>';
             document.getElementById('fnWNoFav').innerHTML = wNoFav + '<span style="font-size:0.4em; color:#8899aa; margin-left:4px;">(' + (totalNoFav > 0 ? ((wNoFav/totalNoFav)*100).toFixed(0) : 0) + '%)</span>';
+
+            // Top section explanation
+            const wFavPctStr = totalFav > 0 ? ((wFav/totalFav)*100).toFixed(0) : 0;
+            const wNoFavPctStr = totalNoFav > 0 ? ((wNoFav/totalNoFav)*100).toFixed(0) : 0;
+            document.getElementById('fnTopDescription').innerHTML =
+                'La torta muestra cuántas veces se escogió al <strong style="color:#3b82f6;">Favorito</strong> vs al <strong style="color:#e74c3c;">No Favorito</strong>. ' +
+                'Los tableros indican cuántas de esas selecciones fueron acertadas: de <strong>' + totalFav + '</strong> veces que se apostó al Fav, se acertó <strong>' + wFav + '</strong> (' + wFavPctStr + '%). ' +
+                'De <strong>' + totalNoFav + '</strong> veces al NoFav, se acertó <strong>' + wNoFav + '</strong> (' + wNoFavPctStr + '%).';
 
             // Pie chart
             const ctx = document.getElementById('favPieChart').getContext('2d');
@@ -464,21 +460,23 @@
                 }
             });
 
-            // Recommendation: how many Fav/NoFav to pick per week (out of 16)
-            // Round with threshold 0.1 up: if decimal >= 0.1, round up
+            // Recommendation: how many Fav/NoFav to pick per week
+            const ticketSize = grupo !== 'ALL' ? 8 : 16;
             const favRatio = total > 0 ? totalJornadaFav / total : 0.5;
             const noFavRatio = total > 0 ? totalJornadaNoFav / total : 0.5;
-            const rawRecFav = 16 * favRatio;
-            const rawRecNoFav = 16 * noFavRatio;
+            const rawRecFav = ticketSize * favRatio;
+            const rawRecNoFav = ticketSize * noFavRatio;
             const roundUp01 = (n) => { const f = n - Math.floor(n); return f >= 0.1 ? Math.ceil(n) : Math.floor(n); };
             const recFav = roundUp01(rawRecFav);
-            const recNoFav = 16 - recFav;
+            const recNoFav = ticketSize - recFav;
 
             document.getElementById('fnRecFav').textContent = recFav;
             document.getElementById('fnRecNoFav').textContent = recNoFav;
+
+            const grupoLabel = grupo !== 'ALL' ? 'del Grupo ' + grupo : 'semanales (ambos grupos)';
             document.getElementById('fnRecDescription').innerHTML =
                 'Basado en el histórico, el favorito gana el <strong>' + jFavPct + '%</strong> de las veces. ' +
-                'De las 16 apuestas semanales, se recomienda escoger <strong style="color:#3b82f6;">' + recFav + ' favoritos</strong> y ' +
+                'De las <strong>' + ticketSize + '</strong> apuestas ' + grupoLabel + ', se recomienda escoger <strong style="color:#3b82f6;">' + recFav + ' favoritos</strong> y ' +
                 '<strong style="color:#e74c3c;">' + recNoFav + ' no favoritos</strong> para maximizar la probabilidad de acierto.';
         }
 
