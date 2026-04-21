@@ -104,6 +104,19 @@
                     <canvas id="jornadaPieChart" width="220" height="220"></canvas>
                 </div>
             </div>
+            
+            <!-- Recomendación semanal -->
+            <div style="display:flex; gap:25px; justify-content:center; flex-wrap:wrap; margin-top:25px;">
+                <div class="scoreboard">
+                    <div class="scoreboard-label">Escoger N° Fav</div>
+                    <div class="scoreboard-number" id="fnRecFav">0</div>
+                </div>
+                <div class="scoreboard">
+                    <div class="scoreboard-label">Escoger N° NoFav</div>
+                    <div class="scoreboard-number" id="fnRecNoFav">0</div>
+                </div>
+            </div>
+            <div id="fnRecDescription" style="max-width:600px; margin:15px auto 0; font-size:0.85em; color:#8899aa; line-height:1.5; text-align:center;"></div>
         </div>
         <!-- Dashboard: Rachas por jugador y grupos -->
         <div id="dash-placeholder2" class="dashboard-panel" style="display:none;">
@@ -450,9 +463,24 @@
                     }
                 }
             });
-        }
 
-        let parlayBarInstance = null;
+            // Recommendation: how many Fav/NoFav to pick per week (out of 16)
+            // Round with threshold 0.1 up: if decimal >= 0.1, round up
+            const favRatio = total > 0 ? totalJornadaFav / total : 0.5;
+            const noFavRatio = total > 0 ? totalJornadaNoFav / total : 0.5;
+            const rawRecFav = 16 * favRatio;
+            const rawRecNoFav = 16 * noFavRatio;
+            const roundUp01 = (n) => { const f = n - Math.floor(n); return f >= 0.1 ? Math.ceil(n) : Math.floor(n); };
+            const recFav = roundUp01(rawRecFav);
+            const recNoFav = 16 - recFav;
+
+            document.getElementById('fnRecFav').textContent = recFav;
+            document.getElementById('fnRecNoFav').textContent = recNoFav;
+            document.getElementById('fnRecDescription').innerHTML =
+                'Basado en el histórico, el favorito gana el <strong>' + jFavPct + '%</strong> de las veces. ' +
+                'De las 16 apuestas semanales, se recomienda escoger <strong style="color:#3b82f6;">' + recFav + ' favoritos</strong> y ' +
+                '<strong style="color:#e74c3c;">' + recNoFav + ' no favoritos</strong> para maximizar la probabilidad de acierto.';
+        }
 
         function parseDate(s) {
             const parts = s.split('-');
