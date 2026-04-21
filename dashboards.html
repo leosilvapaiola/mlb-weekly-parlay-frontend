@@ -486,6 +486,8 @@
             return new Date(s);
         }
 
+        let parlayBarInstance = null;
+
         function renderRachas() {
             // --- Bar chart: aciertos por grupo por semana ---
             const fechas = [...new Set(rawData.map(r => r.fecha).filter(Boolean))];
