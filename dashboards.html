@@ -52,7 +52,7 @@
                 cursor:pointer; min-width:280px;">
                 <option value="grupo">Tabla General por Grupo</option>
                 <option value="favnofav">Métricas Fav/NoFav</option>
-                <option value="placeholder2">Dashboard 4 (próximamente)</option>
+                <option value="placeholder2">Rachas por jugador y grupos</option>
             </select>
         </div>
 
@@ -105,12 +105,14 @@
                 </div>
             </div>
         </div>
+        <!-- Dashboard: Rachas por jugador y grupos -->
         <div id="dash-placeholder2" class="dashboard-panel" style="display:none;">
-            <div style="text-align:center; padding:60px; background:#0f1f3d; border-radius:15px;">
-                <div style="font-size:3em; margin-bottom:15px;">🚧</div>
-                <div style="font-size:1.2em; opacity:0.7;">Dashboard en construcción</div>
-                <div style="font-size:0.9em; opacity:0.5; margin-top:8px;">Próximamente</div>
-            </div>
+            <div style="text-align:center; font-size:1.1em; font-weight:bold; color:#667eea; margin-bottom:20px;">Aciertos por Grupo por Semana</div>
+            <canvas id="parlayBarChart" height="300"></canvas>
+            
+            <hr style="border:none; border-top:2px solid #2a3f65; margin:30px 0;">
+            <div style="text-align:center; font-size:1.1em; font-weight:bold; color:#667eea; margin-bottom:20px;">Racha Actual por Jugador</div>
+            <div id="rachasContent" style="display:flex; flex-direction:column; gap:20px;"></div>
         </div>
     </div>
 
@@ -172,6 +174,46 @@
             color: #25D366;
             font-family: 'Courier New', monospace;
         }
+        .racha-row {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            padding: 8px 12px;
+            background: #0f1f3d;
+            border-radius: 8px;
+        }
+        .racha-name {
+            min-width: 130px;
+            font-weight: bold;
+            color: #e74c3c;
+            font-size: 0.9em;
+        }
+        .racha-dots {
+            display: flex;
+            gap: 4px;
+            flex-wrap: wrap;
+            flex: 1;
+        }
+        .racha-dot {
+            width: 24px;
+            height: 24px;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 0.7em;
+            font-weight: bold;
+        }
+        .racha-dot.win { background: #28a745; }
+        .racha-dot.loss { background: #dc3545; }
+        .racha-streak {
+            min-width: 80px;
+            text-align: right;
+            font-weight: bold;
+            font-size: 0.9em;
+        }
+        .racha-streak.hot { color: #28a745; }
+        .racha-streak.cold { color: #dc3545; }
     </style>
 
     <script>
@@ -410,12 +452,105 @@
             });
         }
 
+        let parlayBarInstance = null;
+
+        function parseDate(s) {
+            const parts = s.split('-');
+            if (parts.length === 4) return new Date(parts[3], parts[2] - 1, parts[1]);
+            return new Date(s);
+        }
+
+        function renderRachas() {
+            // --- Bar chart: aciertos por grupo por semana ---
+            const fechas = [...new Set(rawData.map(r => r.fecha).filter(Boolean))];
+            fechas.sort((a, b) => parseDate(a) - parseDate(b));
+
+            const aByWeek = fechas.map(f => {
+                const week = rawData.filter(r => r.fecha === f && r.jugador && r.jugador.endsWith('(A)'));
+                return week.filter(r => r.resultado === 'Ganador').length;
+            });
+            const bByWeek = fechas.map(f => {
+                const week = rawData.filter(r => r.fecha === f && r.jugador && r.jugador.endsWith('(B)'));
+                return week.filter(r => r.resultado === 'Ganador').length;
+            });
+
+            const ctx = document.getElementById('parlayBarChart').getContext('2d');
+            if (parlayBarInstance) parlayBarInstance.destroy();
+            parlayBarInstance = new Chart(ctx, {
+                type: 'bar',
+                data: {
+                    labels: fechas,
+                    datasets: [
+                        { label: 'Grupo A', data: aByWeek, backgroundColor: '#3b82f6', borderRadius: 4 },
+                        { label: 'Grupo B', data: bByWeek, backgroundColor: '#e74c3c', borderRadius: 4 }
+                    ]
+                },
+                options: {
+                    responsive: true,
+                    scales: {
+                        y: { beginAtZero: true, max: 8, ticks: { color: '#8899aa', stepSize: 1 }, grid: { color: '#1a2d50' } },
+                        x: { ticks: { color: '#8899aa', font: { size: 10 } }, grid: { display: false } }
+                    },
+                    plugins: {
+                        legend: { labels: { color: 'white' } },
+                        tooltip: {
+                            callbacks: {
+                                label: function(ctx) { return ctx.dataset.label + ': ' + ctx.raw + '/8 aciertos'; }
+                            }
+                        }
+                    }
+                }
+            });
+
+            // --- Rachas por jugador ---
+            const groups = ['A', 'B'];
+            let rachasHTML = '';
+            groups.forEach(g => {
+                const suffix = '(' + g + ')';
+                const players = [...new Set(rawData.filter(r => r.jugador && r.jugador.endsWith(suffix)).map(r => r.jugador))].sort();
+                rachasHTML += '<div class="grupo-card"><h3>Grupo ' + g + '</h3>';
+                players.forEach(name => {
+                    const records = rawData.filter(r => r.jugador === name);
+                    records.sort((a, b) => parseDate(a.fecha) - parseDate(b.fecha));
+
+                    // Build dots
+                    let dots = '';
+                    records.forEach(r => {
+                        const isWin = r.resultado === 'Ganador';
+                        dots += '<div class="racha-dot ' + (isWin ? 'win' : 'loss') + '">' + (isWin ? 'W' : 'L') + '</div>';
+                    });
+
+                    // Calculate current streak
+                    let streak = 0;
+                    let streakType = '';
+                    for (let i = records.length - 1; i >= 0; i--) {
+                        const res = records[i].resultado === 'Ganador' ? 'W' : 'L';
+                        if (streakType === '') streakType = res;
+                        if (res === streakType) streak++;
+                        else break;
+                    }
+                    const streakClass = streakType === 'W' ? 'hot' : 'cold';
+                    const streakText = streak + streakType;
+                    const shortName = name.replace(/ \([AB]\)$/, '');
+
+                    rachasHTML += '<div class="racha-row">' +
+                        '<div class="racha-name">' + shortName + '</div>' +
+                        '<div class="racha-dots">' + dots + '</div>' +
+                        '<div class="racha-streak ' + streakClass + '">' + streakText + '</div>' +
+                        '</div>';
+                });
+                rachasHTML += '</div>';
+            });
+            document.getElementById('rachasContent').innerHTML = rachasHTML;
+        }
+
         // Hook into loadData to also init Fav/NoFav
         const _origLoadData = loadData;
         loadData = async function() {
             await _origLoadData();
             populateFechaDropdown();
             renderFavNoFav();
+            renderRachas();
         };
         loadData();
     </script>
