@@ -193,46 +193,39 @@
             color: #25D366;
             font-family: 'Courier New', monospace;
         }
-        .racha-row {
-            display: flex;
-            align-items: center;
-            gap: 10px;
-            padding: 8px 12px;
+        .racha-table {
+            width: 100%;
+            border-collapse: collapse;
             background: #0f1f3d;
-            border-radius: 8px;
-        }
-        .racha-name {
-            min-width: 130px;
-            font-weight: bold;
-            color: #e74c3c;
+            border-radius: 10px;
+            overflow-x: auto;
+            display: block;
             font-size: 0.9em;
         }
-        .racha-dots {
-            display: flex;
-            gap: 4px;
-            flex-wrap: wrap;
-            flex: 1;
+        .racha-table thead { position: sticky; top: 0; }
+        .racha-table th {
+            background: #1a2d50;
+            padding: 8px 6px;
+            text-align: center;
+            white-space: nowrap;
+            border-bottom: 2px solid #2a3f65;
+            font-size: 0.85em;
+            color: #8899aa;
         }
-        .racha-dot {
-            width: 24px;
-            height: 24px;
-            border-radius: 50%;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            font-size: 0.7em;
-            font-weight: bold;
+        .racha-table th:first-child { text-align: left; position: sticky; left: 0; background: #1a2d50; z-index: 1; }
+        .racha-table td {
+            padding: 6px;
+            text-align: center;
+            border-bottom: 1px solid #1a2d50;
+            min-width: 36px;
         }
-        .racha-dot.win { background: #28a745; }
-        .racha-dot.loss { background: #dc3545; }
-        .racha-streak {
-            min-width: 80px;
-            text-align: right;
-            font-weight: bold;
-            font-size: 0.9em;
-        }
-        .racha-streak.hot { color: #28a745; }
-        .racha-streak.cold { color: #dc3545; }
+        .racha-table td:first-child { text-align: left; position: sticky; left: 0; background: #0f1f3d; z-index: 1; color: #e74c3c; font-weight: bold; white-space: nowrap; }
+        .racha-table tr:hover td { background: #162744; }
+        .racha-table tr:hover td:first-child { background: #162744; }
+        .racha-table .racha-w { color: #28a745; font-weight: bold; }
+        .racha-table .racha-l { color: #dc3545; font-weight: bold; }
+        .racha-table .racha-streak-hot { color: #28a745; font-weight: bold; }
+        .racha-table .racha-streak-cold { color: #dc3545; font-weight: bold; }
     </style>
 
     <script>
@@ -538,44 +531,55 @@
                 }
             });
 
-            // --- Rachas por jugador ---
+            // --- Rachas por jugador (grid table) ---
             const groups = ['A', 'B'];
             let rachasHTML = '';
             groups.forEach(g => {
                 const suffix = '(' + g + ')';
                 const players = [...new Set(rawData.filter(r => r.jugador && r.jugador.endsWith(suffix)).map(r => r.jugador))].sort();
-                rachasHTML += '<div class="grupo-card"><h3>Grupo ' + g + '</h3>';
-                players.forEach(name => {
-                    const records = rawData.filter(r => r.jugador === name);
-                    records.sort((a, b) => parseDate(a.fecha) - parseDate(b.fecha));
 
-                    // Build dots
-                    let dots = '';
-                    records.forEach(r => {
-                        const isWin = r.resultado === 'Ganador';
-                        dots += '<div class="racha-dot ' + (isWin ? 'win' : 'loss') + '">' + (isWin ? 'W' : 'L') + '</div>';
+                // Build header: Jugador | S1 | S2 | ... | Racha
+                let header = '<th>Jugador</th>';
+                fechas.forEach((f, i) => { header += '<th>S' + (i + 1) + '</th>'; });
+                header += '<th>Racha</th>';
+
+                let rows = '';
+                players.forEach(name => {
+                    const shortName = name.replace(/ \([AB]\)$/, '');
+                    // Map fecha -> result for this player
+                    const resultMap = {};
+                    rawData.filter(r => r.jugador === name).forEach(r => { resultMap[r.fecha] = r.resultado; });
+
+                    let cells = '<td>' + shortName + '</td>';
+                    let lastResults = [];
+                    fechas.forEach(f => {
+                        const res = resultMap[f];
+                        if (res === 'Ganador') {
+                            cells += '<td class="racha-w">✅</td>';
+                            lastResults.push('W');
+                        } else if (res === 'Perdedor') {
+                            cells += '<td class="racha-l">❌</td>';
+                            lastResults.push('L');
+                        } else {
+                            cells += '<td>-</td>';
+                        }
                     });
 
-                    // Calculate current streak
-                    let streak = 0;
-                    let streakType = '';
-                    for (let i = records.length - 1; i >= 0; i--) {
-                        const res = records[i].resultado === 'Ganador' ? 'W' : 'L';
-                        if (streakType === '') streakType = res;
-                        if (res === streakType) streak++;
+                    // Calculate streak from end
+                    let streak = 0, streakType = '';
+                    for (let i = lastResults.length - 1; i >= 0; i--) {
+                        if (streakType === '') streakType = lastResults[i];
+                        if (lastResults[i] === streakType) streak++;
                         else break;
                     }
-                    const streakClass = streakType === 'W' ? 'hot' : 'cold';
-                    const streakText = streak + streakType;
-                    const shortName = name.replace(/ \([AB]\)$/, '');
+                    const sClass = streakType === 'W' ? 'racha-streak-hot' : 'racha-streak-cold';
+                    cells += '<td class="' + sClass + '">' + streak + streakType + '</td>';
 
-                    rachasHTML += '<div class="racha-row">' +
-                        '<div class="racha-name">' + shortName + '</div>' +
-                        '<div class="racha-dots">' + dots + '</div>' +
-                        '<div class="racha-streak ' + streakClass + '">' + streakText + '</div>' +
-                        '</div>';
+                    rows += '<tr>' + cells + '</tr>';
                 });
-                rachasHTML += '</div>';
+
+                rachasHTML += '<div class="grupo-card"><h3>Grupo ' + g + '</h3>' +
+                    '<table class="racha-table"><thead><tr>' + header + '</tr></thead><tbody>' + rows + '</tbody></table></div>';
             });
             document.getElementById('rachasContent').innerHTML = rachasHTML;
         }
