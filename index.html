@@ -602,6 +602,12 @@
                     const awayTeam = scoreData.away_team;
                     const homeTeam = scoreData.home_team;
                     
+                    // Check early win (5+ run lead rule)
+                    if (bet.early_win) {
+                        statusClass = 'winner';
+                        statusText = '🏆 Ganador (5+)';
+                        betClass = 'winner';
+                    } else {
                     // Determinar si el equipo apostado es away o home
                     const isAwayTeam = bet.team === awayTeam;
                     const isHomeTeam = bet.team === homeTeam;
@@ -641,6 +647,7 @@
                                 betClass = 'tied';
                             }
                         }
+                    }
                     }
                 }
                 
