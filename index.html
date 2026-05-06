@@ -690,7 +690,18 @@
                 const isFinal = score.status === 'Final' || score.status === 'Game Over';
                 
                 if (!isFinal) {
+                    // Check early win even if game not final
+                    if (bet.early_win) {
+                        const line = nick + ': ' + away + ' @ ' + home + ' - ' + betAbbr + ' ✅(5+)';
+                        return { text: line, html: line };
+                    }
                     const line = nick + ': ' + away + ' @ ' + home + ' - ' + betAbbr + ' ⏳';
+                    return { text: line, html: line };
+                }
+                
+                // Game is final - check early_win first
+                if (bet.early_win) {
+                    const line = nick + ': ' + away + ' @ ' + home + ' - ' + betAbbr + ' ✅';
                     return { text: line, html: line };
                 }
                 
