@@ -1,96 +1,49 @@
-# ⚾ MLB Weekly Parlay Tracker - Frontend
+# MLB Parlay Tracker - Frontend
 
-Dashboard en tiempo real para visualizar apuestas de MLB.
+Dashboard de seguimiento de apuestas MLB desplegado en GitHub Pages.
 
-## 🚀 Configuración
+## � Páginas
 
-### 1. Obtener API URL del Backend
+| Página | URL | Propósito |
+|--------|-----|-----------|
+| `index.html` | [Tracker](https://leosilvapaiola.github.io/mlb-weekly-parlay-frontend/) | Seguimiento en vivo de la jornada |
+| `stats.html` | [Tabla General](https://leosilvapaiola.github.io/mlb-weekly-parlay-frontend/stats.html) | Ranking general de jugadores |
+| `dashboards.html` | [Estadísticas](https://leosilvapaiola.github.io/mlb-weekly-parlay-frontend/dashboards.html) | Dashboards avanzados |
 
-Después de deployar el backend:
+## 🔌 Fuentes de Datos
 
+- **Tracker en vivo** (`index.html`): lee de `GET /data` cada 30 segundos
+- **Estadísticas** (`stats.html`, `dashboards.html`): leen de `GET /history` on-demand
+
+Ambos endpoints están en API Gateway del backend AWS. No se requiere exportar ni pushear datos manualmente.
+
+## 📊 Dashboards Disponibles
+
+1. **Tabla General por Grupo** — Ranking separado por Grupo A y B
+2. **Métricas Fav/NoFav** — Distribución de selección favorito/no favorito, aciertos, y recomendación semanal
+3. **Rachas por jugador y grupos** — Aciertos por semana por grupo + grilla de rachas individuales
+
+## ⚾ Features del Tracker
+
+- Scores en tiempo real (auto-refresh 30s)
+- Indicador de ganador anticipado (regla 5+ carreras)
+- Sección "Resultados Hoy" con botón copiar para WhatsApp
+- Botones de acceso rápido a Tabla General y Estadísticas
+
+## 🛠️ Desarrollo
+
+Para hacer cambios al frontend:
 ```bash
-cd ../mlb-weekly-parlay-backend/terraform
-terraform output api_url
-```
-
-### 2. Actualizar index.html
-
-Edita `index.html` y reemplaza `YOUR_API_GATEWAY_URL_HERE` con tu API URL:
-
-```javascript
-const API_URL = 'https://YOUR-API-ID.execute-api.us-east-1.amazonaws.com/prod';
-```
-
-### 3. Deploy a GitHub Pages.
-
-#### Opción A: Desde GitHub UI
-
-1. Push este repo a GitHub
-2. Ve a Settings → Pages
-3. Source: Deploy from a branch
-4. Branch: `main` / `root`
-5. Save
-
-#### Opción B: Desde CLI
-
-```bash
+# Editar archivos HTML
+# Push a GitHub Pages
 git add .
-git commit -m "Initial commit"
-git push origin main
-
-# Habilitar GitHub Pages
-gh repo edit --enable-pages --pages-branch main
+git commit -m "descripción del cambio"
+git push
 ```
 
-### 4. Acceder al Dashboard
+GitHub Pages se actualiza automáticamente en ~1 minuto después del push.
 
-Tu dashboard estará disponible en:
-```
-https://YOUR-USERNAME.github.io/mlb-weekly-parlay-frontend/
-```
+## 📈 Analytics
 
-## 🎨 Características
-
-- ✅ Auto-refresh cada 30 segundos
-- ✅ Indicadores visuales de ganador/perdedor
-- ✅ Información de equipos (récord, pitcher, odds)
-- ✅ Hora de inicio de juegos
-- ✅ Responsive design
-
-## 🔧 Desarrollo Local
-
-```bash
-# Servidor simple con Python
-python3 -m http.server 8000
-
-# O con Node.js
-npx http-server
-```
-
-Luego abre: http://localhost:8000
-
-## 📱 Mobile Friendly
-
-El dashboard es completamente responsive y funciona en móviles.
-
-## 🐛 Troubleshooting
-
-### Error: CORS
-
-Asegúrate de que el API Gateway tenga CORS habilitado (ya está configurado en el backend).
-
-### No se cargan datos
-
-1. Verifica que el API_URL esté correcto
-2. Abre la consola del navegador (F12) para ver errores
-3. Verifica que el backend esté deployado y funcionando
-
-### GitHub Pages no actualiza
-
-1. Espera 1-2 minutos después del push
-2. Limpia el cache del navegador (Ctrl+Shift+R)
-3. Verifica que GitHub Pages esté habilitado en Settings
-
-## 📝 Licencia
-
-MIT License
+Google Analytics (GA4) configurado con ID `G-1C21KF9QS6` en las 3 páginas.
+Dashboard en [analytics.google.com](https://analytics.google.com).
