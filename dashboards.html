@@ -229,6 +229,7 @@
     </style>
 
     <script>
+        const API_URL = 'https://5mvxgh2ju5.execute-api.us-east-1.amazonaws.com/prod';
         let rawData = [];
         let sortState = { A: { col: 'pct', asc: false }, B: { col: 'pct', asc: false } };
 
@@ -240,8 +241,8 @@
 
         async function loadData() {
             try {
-                const resp = await fetch('data/history.json');
-                if (!resp.ok) throw new Error('No se pudo cargar history.json');
+                const resp = await fetch(API_URL + '/history');
+                if (!resp.ok) throw new Error('No se pudo cargar histórico');
                 rawData = await resp.json();
                 renderGrupos();
                 document.getElementById('loading').style.display = 'none';
