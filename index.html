@@ -367,6 +367,17 @@
             box-shadow: 0 6px 20px rgba(37,211,102,0.5);
         }
         
+        .fav-banner {
+            background: #722f37;
+            color: white;
+            padding: 10px 20px;
+            border-radius: 8px;
+            text-align: center;
+            font-size: 0.95em;
+            font-weight: bold;
+            margin-top: 12px;
+        }
+        
         .results-group-title {
             font-size: 1.1em;
             font-weight: bold;
@@ -393,6 +404,7 @@
             <div class="last-update" id="lastUpdate">Cargando...</div>
             <button class="whatsapp-shortcut" onclick="document.getElementById('resultsSection').scrollIntoView({ behavior: 'smooth' })">💬 Resultados Hoy 💬</button>
             <a href="stats.html" class="whatsapp-shortcut" style="background:#f1c40f; color:#333; margin-left:10px; box-shadow:0 4px 15px rgba(241,196,15,0.4);">📊 Tabla General 2026</a>
+            <div class="fav-banner" id="favBanner"></div>
         </header>
         
         <div id="springTrainingNotice" class="spring-training-notice" style="display: none;">
@@ -532,6 +544,9 @@
             
             // Render WhatsApp-style results
             renderResults(data);
+            
+            // Render Fav/NoFav banner
+            renderFavBanner(data);
         }
         
         function createGameCard(gameId, bets, scoreData) {
@@ -756,6 +771,30 @@
                     btn.classList.remove('copied');
                 }, 2000);
             });
+        }
+        
+        function renderFavBanner(data) {
+            const bets = data.bets || [];
+            const scores = data.scores || [];
+            const scoresMap = {};
+            scores.forEach(s => { scoresMap[s.game_id] = s; });
+            
+            let favA = 0, noFavA = 0, favB = 0, noFavB = 0;
+            bets.forEach(bet => {
+                const score = bet.current_score || scoresMap[bet.game_id];
+                if (!score) return;
+                const oddsLocal = Number(score.home_odds) || 0;
+                const oddsVisitante = Number(score.away_odds) || 0;
+                if (oddsLocal === 0 && oddsVisitante === 0) return;
+                const favTeam = oddsLocal > oddsVisitante ? score.away_team : score.home_team;
+                const isFav = bet.team === favTeam;
+                const isA = bet.user && bet.user.endsWith('(A)');
+                if (isA) { if (isFav) favA++; else noFavA++; }
+                else { if (isFav) favB++; else noFavB++; }
+            });
+            
+            document.getElementById('favBanner').innerHTML =
+                'Grupo A: Fav (' + favA + ') - NoFav (' + noFavA + ') &nbsp;||&nbsp; Grupo B: Fav (' + favB + ') - NoFav (' + noFavB + ')';
         }
         
         // Initial load
