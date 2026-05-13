@@ -596,7 +596,21 @@
                     }
                 }
                 
-                scoreHTML = '<div class="game-header"><div class="game-info-left"><div class="game-status">' + scoreData.status + '</div>' + gameTimeHTML + '</div><div class="inning">' + scoreData.inning_state + ' ' + scoreData.inning + '</div></div><div class="teams">' + awayTeamHTML + homeTeamHTML + '</div>';
+                // Build outs and bases display (only during game)
+                let situationHTML = '';
+                if (scoreData.status === 'In Progress') {
+                    const outs = scoreData.outs || 0;
+                    const outsDisplay = '●'.repeat(outs) + '○'.repeat(3 - outs);
+                    const b1 = scoreData.on_first ? '◆' : '◇';
+                    const b2 = scoreData.on_second ? '◆' : '◇';
+                    const b3 = scoreData.on_third ? '◆' : '◇';
+                    situationHTML = '<div style="font-size:0.8em; color:#666; margin-top:4px; text-align:center; font-family:monospace;">' +
+                        '<div>&nbsp;' + b2 + '&nbsp;</div>' +
+                        '<div>' + b3 + '&nbsp;' + b1 + '</div>' +
+                        '<div style="margin-top:2px; font-family:sans-serif;">' + outsDisplay + ' Out</div></div>';
+                }
+                
+                scoreHTML = '<div class="game-header"><div class="game-info-left"><div class="game-status">' + scoreData.status + '</div>' + gameTimeHTML + '</div><div class="inning">' + scoreData.inning_state + ' ' + scoreData.inning + situationHTML + '</div></div><div class="teams">' + awayTeamHTML + homeTeamHTML + '</div>';
             } else {
                 scoreHTML = '<div class="game-header"><div class="game-status">Esperando datos...</div><div class="inning">Game ID: ' + gameId + '</div></div>';
             }
