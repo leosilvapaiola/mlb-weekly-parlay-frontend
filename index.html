@@ -528,9 +528,14 @@
                 scoresMap[scoreItem.game_id] = scoreItem;
             });
             
-            // Render games
+            // Render games sorted by game start time (earliest first)
             gamesGrid.innerHTML = '';
-            Object.keys(gamesBets).forEach(gameId => {
+            const sortedGameIds = Object.keys(gamesBets).sort((a, b) => {
+                const dateA = scoresMap[a] && scoresMap[a].game_date ? scoresMap[a].game_date : '';
+                const dateB = scoresMap[b] && scoresMap[b].game_date ? scoresMap[b].game_date : '';
+                return dateA.localeCompare(dateB);
+            });
+            sortedGameIds.forEach(gameId => {
                 const gameBets = gamesBets[gameId];
                 const scoreData = scoresMap[gameId];
                 
