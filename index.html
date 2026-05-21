@@ -528,11 +528,16 @@
                 scoresMap[scoreItem.game_id] = scoreItem;
             });
             
-            // Render games sorted by game start time (earliest first)
+            // Render games sorted: in-progress/scheduled first, final last, then by start time
             gamesGrid.innerHTML = '';
             const sortedGameIds = Object.keys(gamesBets).sort((a, b) => {
-                const dateA = scoresMap[a] && scoresMap[a].game_date ? scoresMap[a].game_date : '';
-                const dateB = scoresMap[b] && scoresMap[b].game_date ? scoresMap[b].game_date : '';
+                const scoreA = scoresMap[a];
+                const scoreB = scoresMap[b];
+                const isFinalA = scoreA && (scoreA.status === 'Final' || scoreA.status === 'Game Over') ? 1 : 0;
+                const isFinalB = scoreB && (scoreB.status === 'Final' || scoreB.status === 'Game Over') ? 1 : 0;
+                if (isFinalA !== isFinalB) return isFinalA - isFinalB;
+                const dateA = scoreA && scoreA.game_date ? scoreA.game_date : '';
+                const dateB = scoreB && scoreB.game_date ? scoreB.game_date : '';
                 return dateA.localeCompare(dateB);
             });
             sortedGameIds.forEach(gameId => {
