@@ -126,7 +126,11 @@
         </div>
         <!-- Dashboard: Rachas por jugador y grupos -->
         <div id="dash-placeholder2" class="dashboard-panel" style="display:none;">
-            <div style="text-align:center; font-size:1.1em; font-weight:bold; color:#667eea; margin-bottom:20px;">Aciertos por Grupo por Semana</div>
+            <div style="text-align:center; font-size:1.1em; font-weight:bold; color:#667eea; margin-bottom:20px;">Aciertos por Grupo por Semana (Nuevo Formato - Desde S16)</div>
+            <canvas id="parlayBarChartNew" height="300"></canvas>
+            
+            <hr style="border:none; border-top:2px solid #2a3f65; margin:30px 0;">
+            <div style="text-align:center; font-size:1.1em; font-weight:bold; color:#667eea; margin-bottom:20px;">Aciertos por Grupo por Semana (Formato Original - Hasta S15)</div>
             <canvas id="parlayBarChart" height="300"></canvas>
             
             <hr style="border:none; border-top:2px solid #2a3f65; margin:30px 0;">
@@ -231,7 +235,15 @@
     <script>
         const API_URL = 'https://5mvxgh2ju5.execute-api.us-east-1.amazonaws.com/prod';
         let rawData = [];
-        let sortState = { A: { col: 'pct', asc: false }, B: { col: 'pct', asc: false } };
+        let sortState = { A: { col: 'pct', asc: false }, B: { col: 'pct', asc: false }, C: { col: 'pct', asc: false }, D: { col: 'pct', asc: false } };
+
+        // New group mapping (from Season Week 16)
+        const NEW_GROUPS = {
+            'Andrés': 'A', 'Nico': 'A', 'Rafael': 'A', 'Pedro': 'A',
+            'Rubén': 'B', 'Rodolfo': 'B', 'Héctor': 'B', 'Félix': 'B',
+            'Leo': 'C', 'César': 'C', 'Luis': 'C', 'Julio': 'C',
+            'Edgar': 'D', 'Jesús': 'D', 'Elliot': 'D', 'Fabricio': 'D'
+        };
 
         function switchDashboard(id) {
             document.querySelectorAll('.dashboard-panel').forEach(el => el.style.display = 'none');
@@ -253,15 +265,19 @@
         }
 
         function computeGroupStats(records, group) {
-            const suffix = '(' + group + ')';
-            const filtered = records.filter(r => r.jugador && r.jugador.endsWith(suffix));
+            // Filter records where the player's base name maps to this group
+            const filtered = records.filter(r => {
+                if (!r.jugador) return false;
+                const baseName = r.jugador.replace(/ \([A-D]\)$/, '');
+                return NEW_GROUPS[baseName] === group;
+            });
             const players = {};
             filtered.forEach(r => {
-                const name = r.jugador;
-                if (!players[name]) {
-                    players[name] = { jugador: name, aciertos: 0, desaciertos: 0, fav: 0, aciertoFav: 0, noFav: 0, aciertoNoFav: 0 };
+                const baseName = r.jugador.replace(/ \([A-D]\)$/, '');
+                if (!players[baseName]) {
+                    players[baseName] = { jugador: baseName, aciertos: 0, desaciertos: 0, fav: 0, aciertoFav: 0, noFav: 0, aciertoNoFav: 0 };
                 }
-                const p = players[name];
+                const p = players[baseName];
                 const isWin = r.resultado === 'Ganador';
                 const isLoss = r.resultado === 'Perdedor';
                 if (isWin) p.aciertos++;
@@ -323,9 +339,13 @@
         function renderGrupos() {
             const dataA = computeGroupStats(rawData, 'A');
             const dataB = computeGroupStats(rawData, 'B');
+            const dataC = computeGroupStats(rawData, 'C');
+            const dataD = computeGroupStats(rawData, 'D');
             document.getElementById('grupoContent').innerHTML =
                 '<div class="grupo-card"><h3>Grupo A</h3>' + renderGroupTable(dataA, 'A') + '</div>' +
-                '<div class="grupo-card"><h3>Grupo B</h3>' + renderGroupTable(dataB, 'B') + '</div>';
+                '<div class="grupo-card"><h3>Grupo B</h3>' + renderGroupTable(dataB, 'B') + '</div>' +
+                '<div class="grupo-card"><h3>Grupo C</h3>' + renderGroupTable(dataC, 'C') + '</div>' +
+                '<div class="grupo-card"><h3>Grupo D</h3>' + renderGroupTable(dataD, 'D') + '</div>';
         }
 
     </script>
@@ -489,17 +509,36 @@
         }
 
         let parlayBarInstance = null;
+        let parlayBarNewInstance = null;
 
         function renderRachas() {
-            // --- Bar chart: aciertos por grupo por semana ---
-            const fechas = [...new Set(rawData.map(r => r.fecha).filter(Boolean))];
-            fechas.sort((a, b) => parseDate(a) - parseDate(b));
+            // --- Determine old era vs new era dates ---
+            // New era = any fecha that has a record with (C) or (D)
+            const newEraFechas = new Set();
+            rawData.forEach(r => {
+                if (r.jugador && (r.jugador.endsWith('(C)') || r.jugador.endsWith('(D)'))) {
+                    newEraFechas.add(r.fecha);
+                }
+            });
+            // Records with (A)/(B) that share a fecha with (C)/(D) are also new era
+            rawData.forEach(r => {
+                if (r.fecha && newEraFechas.has(r.fecha)) {
+                    newEraFechas.add(r.fecha);
+                }
+            });
 
-            const aByWeek = fechas.map(f => {
+            const allFechas = [...new Set(rawData.map(r => r.fecha).filter(Boolean))];
+            allFechas.sort((a, b) => parseDate(a) - parseDate(b));
+
+            const oldFechas = allFechas.filter(f => !newEraFechas.has(f));
+            const newFechas = allFechas.filter(f => newEraFechas.has(f));
+
+            // --- Old era bar chart (2 groups, format original) ---
+            const aByWeekOld = oldFechas.map(f => {
                 const week = rawData.filter(r => r.fecha === f && r.jugador && r.jugador.endsWith('(A)'));
                 return week.filter(r => r.resultado === 'Ganador').length;
             });
-            const bByWeek = fechas.map(f => {
+            const bByWeekOld = oldFechas.map(f => {
                 const week = rawData.filter(r => r.fecha === f && r.jugador && r.jugador.endsWith('(B)'));
                 return week.filter(r => r.resultado === 'Ganador').length;
             });
@@ -509,10 +548,10 @@
             parlayBarInstance = new Chart(ctx, {
                 type: 'bar',
                 data: {
-                    labels: fechas,
+                    labels: oldFechas,
                     datasets: [
-                        { label: 'Grupo A', data: aByWeek, backgroundColor: '#3b82f6', borderRadius: 4 },
-                        { label: 'Grupo B', data: bByWeek, backgroundColor: '#e74c3c', borderRadius: 4 }
+                        { label: 'Grupo A', data: aByWeekOld, backgroundColor: '#3b82f6', borderRadius: 4 },
+                        { label: 'Grupo B', data: bByWeekOld, backgroundColor: '#e74c3c', borderRadius: 4 }
                     ]
                 },
                 options: {
@@ -532,28 +571,93 @@
                 }
             });
 
-            // --- Rachas por jugador (grid table) ---
-            const groups = ['A', 'B'];
+            // --- New era bar chart (4 groups) ---
+            const aByWeekNew = newFechas.map(f => {
+                return rawData.filter(r => r.fecha === f && r.jugador && NEW_GROUPS[r.jugador.replace(/ \([A-D]\)$/, '')] === 'A' && r.resultado === 'Ganador').length;
+            });
+            const bByWeekNew = newFechas.map(f => {
+                return rawData.filter(r => r.fecha === f && r.jugador && NEW_GROUPS[r.jugador.replace(/ \([A-D]\)$/, '')] === 'B' && r.resultado === 'Ganador').length;
+            });
+            const cByWeekNew = newFechas.map(f => {
+                return rawData.filter(r => r.fecha === f && r.jugador && NEW_GROUPS[r.jugador.replace(/ \([A-D]\)$/, '')] === 'C' && r.resultado === 'Ganador').length;
+            });
+            const dByWeekNew = newFechas.map(f => {
+                return rawData.filter(r => r.fecha === f && r.jugador && NEW_GROUPS[r.jugador.replace(/ \([A-D]\)$/, '')] === 'D' && r.resultado === 'Ganador').length;
+            });
+
+            const ctxNew = document.getElementById('parlayBarChartNew').getContext('2d');
+            if (parlayBarNewInstance) parlayBarNewInstance.destroy();
+            if (newFechas.length > 0) {
+                parlayBarNewInstance = new Chart(ctxNew, {
+                    type: 'bar',
+                    data: {
+                        labels: newFechas,
+                        datasets: [
+                            { label: 'Grupo A', data: aByWeekNew, backgroundColor: '#3b82f6', borderRadius: 4 },
+                            { label: 'Grupo B', data: bByWeekNew, backgroundColor: '#e74c3c', borderRadius: 4 },
+                            { label: 'Grupo C', data: cByWeekNew, backgroundColor: '#10b981', borderRadius: 4 },
+                            { label: 'Grupo D', data: dByWeekNew, backgroundColor: '#f59e0b', borderRadius: 4 }
+                        ]
+                    },
+                    options: {
+                        responsive: true,
+                        scales: {
+                            y: { beginAtZero: true, max: 4, ticks: { color: '#8899aa', stepSize: 1 }, grid: { color: '#1a2d50' } },
+                            x: { ticks: { color: '#8899aa', font: { size: 10 } }, grid: { display: false } }
+                        },
+                        plugins: {
+                            legend: { labels: { color: 'white' } },
+                            tooltip: {
+                                callbacks: {
+                                    label: function(ctx) { return ctx.dataset.label + ': ' + ctx.raw + '/4 aciertos'; }
+                                }
+                            }
+                        }
+                    }
+                });
+            } else {
+                ctxNew.font = '16px Segoe UI';
+                ctxNew.fillStyle = '#8899aa';
+                ctxNew.textAlign = 'center';
+                ctxNew.fillText('Sin datos del nuevo formato aún', ctxNew.canvas.width / 2, 150);
+            }
+
+            // --- Rachas por jugador (grid table) - 4 groups ---
+            // Determine week labels
+            const weekLabels = {};
+            let oldWeekNum = 1;
+            oldFechas.forEach(f => { weekLabels[f] = 'S' + oldWeekNum; oldWeekNum++; });
+            let newWeekNum = oldWeekNum;
+            newFechas.forEach(f => { weekLabels[f] = 'S' + newWeekNum + '*'; newWeekNum++; });
+
+            const groups = ['A', 'B', 'C', 'D'];
             let rachasHTML = '';
             groups.forEach(g => {
-                const suffix = '(' + g + ')';
-                const players = [...new Set(rawData.filter(r => r.jugador && r.jugador.endsWith(suffix)).map(r => r.jugador))].sort();
+                // Get all players that belong to this new group
+                const playerBaseNames = Object.keys(NEW_GROUPS).filter(n => NEW_GROUPS[n] === g);
+                
+                // Find all jugador entries for these base names
+                const playerRecords = {};
+                rawData.forEach(r => {
+                    if (!r.jugador) return;
+                    const baseName = r.jugador.replace(/ \([A-D]\)$/, '');
+                    if (NEW_GROUPS[baseName] === g) {
+                        if (!playerRecords[baseName]) playerRecords[baseName] = {};
+                        if (!playerRecords[baseName][r.fecha]) playerRecords[baseName][r.fecha] = r.resultado;
+                    }
+                });
 
-                // Build header: Jugador | S1 | S2 | ... | Racha
+                // Build header
                 let header = '<th>Jugador</th>';
-                fechas.forEach((f, i) => { header += '<th>S' + (i + 1) + '</th>'; });
+                allFechas.forEach(f => { header += '<th>' + weekLabels[f] + '</th>'; });
                 header += '<th>Racha</th>';
 
                 let rows = '';
-                players.forEach(name => {
-                    const shortName = name.replace(/ \([AB]\)$/, '');
-                    // Map fecha -> result for this player
-                    const resultMap = {};
-                    rawData.filter(r => r.jugador === name).forEach(r => { resultMap[r.fecha] = r.resultado; });
-
-                    let cells = '<td>' + shortName + '</td>';
+                playerBaseNames.sort().forEach(baseName => {
+                    const resultMap = playerRecords[baseName] || {};
+                    let cells = '<td>' + baseName + '</td>';
                     let lastResults = [];
-                    fechas.forEach(f => {
+                    allFechas.forEach(f => {
                         const res = resultMap[f];
                         if (res === 'Ganador') {
                             cells += '<td class="racha-w">✅</td>';
@@ -582,6 +686,7 @@
                 rachasHTML += '<div class="grupo-card"><h3>Grupo ' + g + '</h3>' +
                     '<table class="racha-table"><thead><tr>' + header + '</tr></thead><tbody>' + rows + '</tbody></table></div>';
             });
+            rachasHTML += '<div style="text-align:center; font-size:0.85em; color:#8899aa; margin-top:10px;">* Cambio de formato: desde S' + oldWeekNum + ' los grupos se reorganizaron de 2 (A, B de 8) a 4 (A, B, C, D de 4).</div>';
             document.getElementById('rachasContent').innerHTML = rachasHTML;
         }
 

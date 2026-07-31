@@ -111,11 +111,12 @@
         function computeStats(records) {
             const players = {};
             records.forEach(r => {
-                const name = r.jugador;
-                if (!players[name]) {
-                    players[name] = { jugador: name, aciertos: 0, desaciertos: 0, fav: 0, aciertoFav: 0, noFav: 0, aciertoNoFav: 0 };
+                // Strip group letter to aggregate by base name
+                const baseName = r.jugador.replace(/ \([A-D]\)$/, '');
+                if (!players[baseName]) {
+                    players[baseName] = { jugador: baseName, aciertos: 0, desaciertos: 0, fav: 0, aciertoFav: 0, noFav: 0, aciertoNoFav: 0 };
                 }
-                const p = players[name];
+                const p = players[baseName];
                 const isWin = r.resultado === 'Ganador';
                 const isLoss = r.resultado === 'Perdedor';
                 if (isWin) p.aciertos++;

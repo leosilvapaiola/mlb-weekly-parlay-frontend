@@ -435,27 +435,25 @@
         
         // Mapeo de nombres completos a apodos para WhatsApp
         const NICKNAMES = {
-            'Rafael (A)': 'Rafa',
-            'Rubén (A)': 'QKracho',
-            'Julio (A)': 'Julito',
-            'Rodolfo (A)': 'Churry',
-            'Félix (A)': 'Félix',
-            'Leo (A)': 'Leo',
-            'Nico (A)': 'Nico',
+            // New format (from Season Week 16)
+            'Andrés (A)': 'Andrés', 'Nico (A)': 'Nico', 'Rafael (A)': 'Rafa', 'Pedro (A)': 'Pedro',
+            'Rubén (B)': 'QKracho', 'Rodolfo (B)': 'Churry', 'Héctor (B)': 'HS9', 'Félix (B)': 'Félix',
+            'Leo (C)': 'Leo', 'César (C)': 'César', 'Luis (C)': 'Luis', 'Julio (C)': 'Julito',
+            'Edgar (D)': 'Edgar', 'Jesús (D)': 'Yisus', 'Elliot (D)': 'Elliot', 'Fabricio (D)': 'Fabri',
+            // Old format mappings (Weeks 1-15) for historical data
+            'Rubén (A)': 'QKracho', 'Julio (A)': 'Julito',
+            'Rodolfo (A)': 'Churry', 'Félix (A)': 'Félix', 'Leo (A)': 'Leo',
             'Elliot (A)': 'Elliot',
-            'Andrés (B)': 'Andrés',
-            'Luis (B)': 'Luis',
-            'Jesús (B)': 'Yisus',
-            'Héctor (B)': 'HS9',
-            'Edgar (B)': 'Edgar',
-            'Fabricio (B)': 'Fabri',
-            'César (B)': 'César',
-            'Pedro (B)': 'Pedro'
+            'Andrés (B)': 'Andrés', 'Luis (B)': 'Luis', 'Jesús (B)': 'Yisus',
+            'Héctor (B)': 'HS9', 'Edgar (B)': 'Edgar', 'Fabricio (B)': 'Fabri',
+            'César (B)': 'César', 'Pedro (B)': 'Pedro'
         };
         
         // Orden fijo de los grupos
-        const GROUP_A_ORDER = ['Rafael (A)', 'Rubén (A)', 'Julio (A)', 'Rodolfo (A)', 'Félix (A)', 'Leo (A)', 'Nico (A)', 'Elliot (A)'];
-        const GROUP_B_ORDER = ['Andrés (B)', 'Luis (B)', 'Jesús (B)', 'Héctor (B)', 'Edgar (B)', 'Fabricio (B)', 'César (B)', 'Pedro (B)'];
+        const GROUP_A_ORDER = ['Andrés (A)', 'Nico (A)', 'Rafael (A)', 'Pedro (A)'];
+        const GROUP_B_ORDER = ['Rubén (B)', 'Rodolfo (B)', 'Héctor (B)', 'Félix (B)'];
+        const GROUP_C_ORDER = ['Leo (C)', 'César (C)', 'Luis (C)', 'Julio (C)'];
+        const GROUP_D_ORDER = ['Edgar (D)', 'Jesús (D)', 'Elliot (D)', 'Fabricio (D)'];
         
         // Abreviaciones de equipos MLB
         const TEAM_ABBR = {
@@ -476,7 +474,7 @@
         }
         
         function getNickname(userName) {
-            return NICKNAMES[userName] || userName.replace(/ \([AB]\)$/, '');
+            return NICKNAMES[userName] || userName.replace(/ \([A-D]\)$/, '');
         }
         
         // Check if it's Spring Training (February or March)
@@ -776,12 +774,34 @@
                 }
             });
             
+            let textC = 'Grupo C\n';
+            let htmlC = '';
+            GROUP_C_ORDER.forEach(name => {
+                const line = buildLine(name);
+                if (line) {
+                    textC += line.text + '\n';
+                    htmlC += '<div class="result-line">' + line.html + '</div>';
+                }
+            });
+            
+            let textD = 'Grupo D\n';
+            let htmlD = '';
+            GROUP_D_ORDER.forEach(name => {
+                const line = buildLine(name);
+                if (line) {
+                    textD += line.text + '\n';
+                    htmlD += '<div class="result-line">' + line.html + '</div>';
+                }
+            });
+            
             document.getElementById('resultsContent').innerHTML =
                 '<div class="results-group-title">Grupo A</div>' + htmlA +
-                '<div class="results-group-title">Grupo B</div>' + htmlB;
+                '<div class="results-group-title">Grupo B</div>' + htmlB +
+                '<div class="results-group-title">Grupo C</div>' + htmlC +
+                '<div class="results-group-title">Grupo D</div>' + htmlD;
             
             // Store for copy
-            window._resultsText = textA + '\n' + textB;
+            window._resultsText = textA + '\n' + textB + '\n' + textC + '\n' + textD;
         }
         
         function copyResults() {
@@ -803,7 +823,7 @@
             const scoresMap = {};
             scores.forEach(s => { scoresMap[s.game_id] = s; });
             
-            let favA = 0, noFavA = 0, favB = 0, noFavB = 0;
+            let favA = 0, noFavA = 0, favB = 0, noFavB = 0, favC = 0, noFavC = 0, favD = 0, noFavD = 0;
             bets.forEach(bet => {
                 const score = bet.current_score || scoresMap[bet.game_id];
                 if (!score) return;
@@ -812,13 +832,18 @@
                 if (oddsLocal === 0 && oddsVisitante === 0) return;
                 const favTeam = oddsLocal > oddsVisitante ? score.away_team : score.home_team;
                 const isFav = bet.team === favTeam;
-                const isA = bet.user && bet.user.endsWith('(A)');
-                if (isA) { if (isFav) favA++; else noFavA++; }
-                else { if (isFav) favB++; else noFavB++; }
+                const user = bet.user || '';
+                if (user.endsWith('(A)')) { if (isFav) favA++; else noFavA++; }
+                else if (user.endsWith('(B)')) { if (isFav) favB++; else noFavB++; }
+                else if (user.endsWith('(C)')) { if (isFav) favC++; else noFavC++; }
+                else if (user.endsWith('(D)')) { if (isFav) favD++; else noFavD++; }
             });
             
             document.getElementById('favBanner').innerHTML =
-                'Grupo A: Fav (' + favA + ') - NoFav (' + noFavA + ') &nbsp;||&nbsp; Grupo B: Fav (' + favB + ') - NoFav (' + noFavB + ')';
+                'Grupo A: Fav (' + favA + ') - NoFav (' + noFavA + ') &nbsp;||&nbsp; ' +
+                'Grupo B: Fav (' + favB + ') - NoFav (' + noFavB + ') &nbsp;||&nbsp; ' +
+                'Grupo C: Fav (' + favC + ') - NoFav (' + noFavC + ') &nbsp;||&nbsp; ' +
+                'Grupo D: Fav (' + favD + ') - NoFav (' + noFavD + ')';
         }
         
         // Initial load
