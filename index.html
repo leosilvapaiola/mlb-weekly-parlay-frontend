@@ -639,12 +639,6 @@
                     const awayTeam = scoreData.away_team;
                     const homeTeam = scoreData.home_team;
                     
-                    // Check early win (5+ run lead rule)
-                    if (bet.early_win) {
-                        statusClass = 'winner';
-                        statusText = '🏆 Ganador (5+)';
-                        betClass = 'winner';
-                    } else {
                     // Determinar si el equipo apostado es away o home
                     const isAwayTeam = bet.team === awayTeam;
                     const isHomeTeam = bet.team === homeTeam;
@@ -684,7 +678,6 @@
                                 betClass = 'tied';
                             }
                         }
-                    }
                     }
                 }
                 
@@ -727,18 +720,7 @@
                 const isFinal = score.status === 'Final' || score.status === 'Game Over';
                 
                 if (!isFinal) {
-                    // Check early win even if game not final
-                    if (bet.early_win) {
-                        const line = nick + ': ' + away + ' @ ' + home + ' - ' + betAbbr + ' ✅(5+)';
-                        return { text: line, html: line };
-                    }
                     const line = nick + ': ' + away + ' @ ' + home + ' - ' + betAbbr + ' ⏳';
-                    return { text: line, html: line };
-                }
-                
-                // Game is final - check early_win first
-                if (bet.early_win) {
-                    const line = nick + ': ' + away + ' @ ' + home + ' - ' + betAbbr + ' ✅';
                     return { text: line, html: line };
                 }
                 
